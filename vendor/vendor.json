@@ -1,0 +1,26 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "AjbjbhFVAOP/1NU5HL+uy+X/yJo=",
+			"path": "github.com/ONSdigital/go-ns/log",
+			"revision": "a7bfc7fcc7219d4ea390112a454749e6fdd3dc21",
+			"revisionTime": "2017-12-12T11:06:22Z"
+		},
+		{
+			"checksumSHA1": "hBgLmZ/4mCxmnH88mqFKBkpJFUY=",
+			"origin": "github.com/ONSdigital/go-ns/vendor/github.com/mgutz/ansi",
+			"path": "github.com/mgutz/ansi",
+			"revision": "a7bfc7fcc7219d4ea390112a454749e6fdd3dc21",
+			"revisionTime": "2017-12-12T11:06:22Z"
+		},
+		{
+			"checksumSHA1": "zmC8/3V4ls53DJlNTKDZwPSC/dA=",
+			"path": "github.com/satori/go.uuid",
+			"revision": "5bf94b69c6b68ee1b541973bb8e1144db23a194b",
+			"revisionTime": "2017-03-21T23:07:31Z"
+		}
+	],
+	"rootPath": "github.com/ONSdigital/dp-visual-ons-migration"
+}
