@@ -32,7 +32,7 @@ func CreateArticle(details *mapping.MigrationDetails) *Article {
 		RelatedMethodology:        []interface{}{},
 		RelatedMethodologyArticle: []interface{}{},
 		Versions:                  []interface{}{},
-		URI:                       details.GetONSURI(),
+		URI:                       details.GetTaxonomyURI(),
 		Type:                      "article",
 		Topics:                    []interface{}{},
 	}

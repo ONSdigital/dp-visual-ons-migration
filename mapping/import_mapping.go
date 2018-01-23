@@ -80,7 +80,7 @@ func ParseMapping(filename string) (*MigrationDetails, error) {
 	return m, nil
 }
 
-func (m *MigrationDetails) GetONSURI() string {
+func (m *MigrationDetails) GetTaxonomyURI() string {
 	return m.TaxonomyURI + "/" + strings.TrimSpace(strings.ToLower(m.GetCollectionName()))
 }
 
