@@ -10,7 +10,7 @@ import (
 	"github.com/ONSdigital/dp-visual-ons-migration/mapping"
 	"regexp"
 	"strings"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 const (

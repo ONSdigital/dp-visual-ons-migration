@@ -6,7 +6,7 @@ import (
 	"flag"
 	"github.com/ONSdigital/dp-visual-ons-migration/zebedee"
 	"os"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 func main() {
