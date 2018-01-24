@@ -2,13 +2,21 @@ package zebedee
 
 import (
 	"github.com/ONSdigital/dp-visual-ons-migration/mapping"
+	"time"
+	"fmt"
 )
 
 func CreateArticle(details *mapping.MigrationDetails) *Article {
+	t, err := time.Parse("02.01.06", details.PublishDate)
+	if err != nil {
+		panic(err)
+	}
+
 	desc := Description{
 		Title:       details.Title,
 		Keywords:    details.Keywords,
 		ReleaseDate: "2018-01-22T00:00:00.000Z",
+		Edition:     fmt.Sprintf("%s %d", t.Month().String(), t.Year()),
 	}
 
 	//encoded := item.Extensions["content"]["encoded"]

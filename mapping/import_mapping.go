@@ -16,12 +16,8 @@ type MigrationDetails struct {
 	Title        string   `json:"title"`
 	TaxonomyURI  string   `json:"taxonomyURI"`
 	RelatedLinks []string `json:"relatedLinks"`
-	TypeCode     string   `json:"typeCode"`
-	TypeTag      string   `json:"typeTag"`
-	PostContent  []string `json:"postContent"`
 	Keywords     []string `json:"keywords"`
 	VisualURL    string   `json:"visualURL"`
-	TagsUsed     string   `json:"tagsUsed"`
 }
 
 func ParseMapping(filename string) (*MigrationDetails, error) {
@@ -63,12 +59,8 @@ func ParseMapping(filename string) (*MigrationDetails, error) {
 		Title:        strings.TrimSpace(line[2]),
 		TaxonomyURI:  strings.TrimSpace(line[3]),
 		RelatedLinks: toSlice(line[4], ","),
-		TypeCode:     strings.TrimSpace(line[5]),
-		TypeTag:      strings.TrimSpace(line[6]),
-		PostContent:  toSlice(line[7], ";"),
-		Keywords:     toSlice(line[8], ";"),
-		VisualURL:    strings.TrimSpace(line[9]),
-		TagsUsed:     strings.TrimSpace(line[10]),
+		Keywords:     toSlice(line[5], ";"),
+		VisualURL:    strings.TrimSpace(line[6]),
 	}
 
 	b, err := json.MarshalIndent(m, "", "	")

@@ -11,16 +11,19 @@ import (
 	"regexp"
 	"strings"
 	"errors"
+	"time"
 )
 
 const (
-	inProgress      = "inprogress"
-	complete        = "complete"
-	reviewed        = "reviewed"
-	dataJSON        = "data.json"
-	approvalStatus  = "NOT_STARTED"
-	collectionOwner = "PUBLISHING_SUPPORT"
-	collectionType  = "manual"
+	inProgress       = "inprogress"
+	complete         = "complete"
+	reviewed         = "reviewed"
+	dataJSON         = "data.json"
+	approvalStatus   = "NOT_STARTED"
+	collectionOwner  = "PUBLISHING_SUPPORT"
+	collectionType   = "manual"
+	articleURIFormat = "%s%s/articles/%s/%s"
+	dateLayout       = "02.01.06"
 )
 
 var (
@@ -129,8 +132,15 @@ func (c Collection) ResolveInProgress(path string) string {
 	return c.Metadata.InProgress + path
 }
 
-func (c Collection) AddArticle(article *Article, migrationDetails *mapping.MigrationDetails) error {
-	path := c.Metadata.InProgress + migrationDetails.GetTaxonomyURI()
+func (c Collection) AddArticle(article *Article, details *mapping.MigrationDetails) error {
+	t, err := time.Parse(dateLayout, details.PublishDate)
+	if err != nil {
+		panic(err)
+	}
+
+	dir := sanitisedFilename(details.PostTitle)
+	edition := strings.ToLower(fmt.Sprintf("%s%d", t.Month(), t.Year()))
+	path := fmt.Sprintf(articleURIFormat, c.Metadata.InProgress, details.TaxonomyURI, dir, edition)
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return err
 	}
@@ -148,4 +158,8 @@ func writeToFile(path string, b []byte) error {
 		return CollectionError{"failed to write json file", err}
 	}
 	return nil
+}
+
+func sanitisedFilename(name string) string {
+	return strings.ToLower(validFileNameRegex.ReplaceAllString(name, ""))
 }

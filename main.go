@@ -14,13 +14,13 @@ func main() {
 	log.Info("dp-visual-migration", nil)
 
 	collectionsDir := flag.String("collectionsDir", "/content/collections", "zebedee zebedee dir")
-	//collectionsDir := flag.String("collectionsDir", "/Users/dave/Desktop/zebedee-data/content/zebedee/collections", "zebedee zebedee dir")
 	flag.Parse()
 
 	if len(*collectionsDir) == 0 {
 		exit(errors.New("no collections directory path was provided"))
 	}
 
+	log.Info("configuring collections root directory", log.Data{"dir": *collectionsDir})
 	zebedee.CollectionsRoot = *collectionsDir
 
 	m, err := mapping.ParseMapping("example-mapping.csv")
