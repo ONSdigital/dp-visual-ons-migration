@@ -14,7 +14,7 @@ const (
 	openIFrameTagRegex     = "\\[iframe url[ ]*=[ ]*"
 	closeIFrameTag         = "]"
 	onsInteractiveOpenTag  = "<ons-interactive url="
-	onsInteractiveCloseTag = " full-width=\"false\"/>"
+	onsInteractiveCloseTag = " full-width=\"true\"/>"
 	pageType               = "article"
 )
 
