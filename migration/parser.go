@@ -1,28 +1,17 @@
-package mapping
+package migration
 
 import (
 	"os"
-	"encoding/csv"
 	"io"
+	"encoding/csv"
 	"github.com/ONSdigital/go-ns/log"
 	"strings"
-	"regexp"
 )
 
-type MigrationDetails struct {
-	PublishDate  string   `json:"publishDate"`
-	PostTitle    string   `json:"postTitle"`
-	Title        string   `json:"title"`
-	TaxonomyURI  string   `json:"taxonomyURI"`
-	RelatedLinks []string `json:"relatedLinks"`
-	Keywords     []string `json:"keywords"`
-	VisualURL    string   `json:"visualURL"`
-}
-
-func ParseMigrationFile(filename string) ([]*MigrationDetails, error) {
+func ParseMigrationFile(filename string) ([]*Article, error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		return nil, Error{"error while attempting to open migration file", err, log.Data{"filename": filename}}
 	}
 
 	defer f.Close()
@@ -39,11 +28,10 @@ func ParseMigrationFile(filename string) ([]*MigrationDetails, error) {
 			break
 		}
 		if err != nil {
-			log.Error(err, nil)
+			return nil, Error{"error while reading migration file", err, nil}
 		}
 
 		if isHeader {
-			log.Info("skipping header row", nil)
 			isHeader = false
 			continue
 		}
@@ -51,9 +39,9 @@ func ParseMigrationFile(filename string) ([]*MigrationDetails, error) {
 		mapping = append(mapping, row)
 	}
 
-	migrationPlan := make([]*MigrationDetails, 0)
+	migrationPlan := make([]*Article, 0)
 	for _, line := range mapping {
-		migrationPlan = append(migrationPlan, &MigrationDetails{
+		migrationPlan = append(migrationPlan, &Article{
 			PublishDate:  strings.TrimSpace(line[0]),
 			PostTitle:    strings.TrimSpace(line[1]),
 			Title:        strings.TrimSpace(line[2]),
@@ -65,15 +53,6 @@ func ParseMigrationFile(filename string) ([]*MigrationDetails, error) {
 	}
 
 	return migrationPlan, nil
-}
-
-func (m *MigrationDetails) GetTaxonomyURI() string {
-	return m.TaxonomyURI + "/" + strings.TrimSpace(strings.ToLower(m.GetCollectionName()))
-}
-
-func (m *MigrationDetails) GetCollectionName() string {
-	r, _ := regexp.Compile("[^a-zA-Z0-9]+")
-	return strings.ToLower(r.ReplaceAllString(m.Title, ""))
 }
 
 func toSlice(line string, delimiter string) []string {

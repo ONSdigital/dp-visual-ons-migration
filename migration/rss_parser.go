@@ -1,15 +1,11 @@
-package visual
+package migration
 
 import (
 	"os"
 	"github.com/mmcdole/gofeed"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/pkg/errors"
 	"net/url"
 )
-
-// How to get the post type.
-//t := item.Extensions["wp"]["post_type"]
 
 type Mapping map[string]*gofeed.Item
 
@@ -21,29 +17,28 @@ func ParseRSSFeed(filename string) (Mapping, error) {
 
 	defer file.Close()
 
+	log.Info("attempting to parse RSS export file", nil)
 	fp := gofeed.NewParser()
 	visualFeed, err := fp.Parse(file)
 	if err != nil {
-		return nil, err
+		return nil, Error{"failed to parse visual RSS feed", err, nil}
 	}
 
 	visualMapping := make(map[string]*gofeed.Item)
 
+	log.Info("mapping visual posts by post url", nil)
 	for _, item := range visualFeed.Items {
 		itemURL, err := url.Parse(item.Link)
 		if err != nil {
-			err := errors.New("failed to parse visual URL")
-			log.Error(err, log.Data{"title": item.Title, "url": item.Link})
-			return nil, err
+			return nil, Error{"failed to parse visual URL", err, log.Data{"title": item.Title, "url": item.Link}}
 		}
 
 		if _, ok := visualMapping[itemURL.String()]; !ok {
 			visualMapping[itemURL.String()] = item
 		} else {
-			err := errors.New("duplicate entry in visual rss xml")
-			log.Error(err, log.Data{"title": item.Title, "url": item.Link})
-			return nil, err
+			return nil, Error{"duplicate entry in visual RSS xmL", err, log.Data{"title": item.Title, "url": item.Link}}
 		}
 	}
+	log.Info("mapping generated successfully", nil)
 	return visualMapping, nil
 }

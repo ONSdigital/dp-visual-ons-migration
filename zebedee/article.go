@@ -1,17 +1,17 @@
 package zebedee
 
 import (
-	"github.com/ONSdigital/dp-visual-ons-migration/mapping"
 	"time"
 	"fmt"
 	"github.com/mmcdole/gofeed"
+	"github.com/ONSdigital/dp-visual-ons-migration/migration"
 )
 
 var (
 	pageType = "article"
 )
 
-func CreateArticle(details *mapping.MigrationDetails, visualItem *gofeed.Item) *Article {
+func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
 	t, err := time.Parse("02.01.06", details.PublishDate)
 	if err != nil {
 		panic(err)

@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"os"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/dp-visual-ons-migration/mapping"
 	"regexp"
 	"strings"
 	"errors"
 	"time"
+	"github.com/ONSdigital/dp-visual-ons-migration/migration"
 )
 
 const (
@@ -63,11 +63,6 @@ type Collection struct {
 	Type                  string              `json:"type"`
 }
 
-type CollectionError struct {
-	message     string
-	originalErr error
-}
-
 func CreateCollection(name string) (*Collection, error) {
 	name = strings.ToLower(validFileNameRegex.ReplaceAllString(name, ""))
 	name = "visual_" + name
@@ -97,56 +92,77 @@ func CreateCollection(name string) (*Collection, error) {
 
 	b, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
-		return nil, CollectionError{message: "failed to marshall zebedee json", originalErr: err}
+		return nil, migration.Error{Message: "failed to marshall zebedee json", OriginalErr: err, Params: nil}
 	}
 
-	log.Info("creating Root zebedee directory", log.Data{"path": c.Metadata.Root})
-	if err := os.Mkdir(c.Metadata.Root, 0755); err != nil {
-		return nil, CollectionError{"failed to created collection Root dir", err}
+	for _, path := range []string{c.Metadata.Root, c.Metadata.InProgress, c.Metadata.Complete, c.Metadata.Reviewed} {
+		log.Info("creating collection directory", log.Data{"path": path})
+
+		if err := os.Mkdir(path, 0755); err != nil {
+			return nil, migration.Error{
+				Message:     "failed to created collection dir",
+				OriginalErr: err,
+				Params:      log.Data{"path": path},
+			}
+		}
 	}
 
-	if err := os.Mkdir(c.Metadata.InProgress, 0755); err != nil {
-		return nil, CollectionError{"failed to created collection InProgress dir", err}
-	}
-
-	if err := os.Mkdir(c.Metadata.Complete, 0755); err != nil {
-		return nil, CollectionError{"failed to created collection Complete dir", err}
-	}
-
-	if err := os.Mkdir(c.Metadata.Reviewed, 0755); err != nil {
-		return nil, CollectionError{"failed to created collection Reviewed dir", err}
-	}
-
+	log.Info("creating collection json file", log.Data{"path": c.Metadata.CollectionJSON})
 	if err := writeToFile(c.Metadata.CollectionJSON, b); err != nil {
-		return nil, CollectionError{"failed to write collection json file", err}
+		return nil, migration.Error{
+			Message:     "failed to write collection json file",
+			OriginalErr: err,
+			Params:      log.Data{"path": c.Metadata.CollectionJSON},
+		}
 	}
 
+	log.Debug("collection created successfully", log.Data{"path": c.Metadata.Root})
 	return c, nil
-}
-
-func (e CollectionError) Error() string {
-	return e.message + " " + e.originalErr.Error()
 }
 
 func (c Collection) ResolveInProgress(path string) string {
 	return c.Metadata.InProgress + path
 }
 
-func (c Collection) AddArticle(article *Article, details *mapping.MigrationDetails) error {
-	t, err := time.Parse(dateLayout, details.PublishDate)
+func (c Collection) AddArticle(zebedeeArticle *Article, visualArticle *migration.Article) error {
+
+	t, err := time.Parse(dateLayout, visualArticle.PublishDate)
 	if err != nil {
-		panic(err)
+		return migration.Error{
+			Message:     "to parse visual article publish date",
+			OriginalErr: err,
+			Params:      nil,
+		}
 	}
 
-	dir := sanitisedFilename(details.PostTitle)
+	dir := sanitisedFilename(visualArticle.PostTitle)
 	edition := strings.ToLower(fmt.Sprintf("%s%d", t.Month(), t.Year()))
-	path := fmt.Sprintf(articleURIFormat, c.Metadata.InProgress, details.TaxonomyURI, dir, edition)
+	path := fmt.Sprintf(articleURIFormat, c.Metadata.InProgress, visualArticle.TaxonomyURI, dir, edition)
+
+	log.Info("making article directories", log.Data{"collection": c.Name, "path": path})
 	if err := os.MkdirAll(path, 0755); err != nil {
+		return migration.Error{
+			Message:     "error making article directories",
+			OriginalErr: err,
+			Params:      log.Data{"collection": c.Name, "path": path},
+		}
+	}
+
+	b, err := json.MarshalIndent(zebedeeArticle, "", "	")
+	if err != nil {
 		return err
 	}
-
-	b, _ := json.MarshalIndent(article, "", "	")
-	return writeToFile(path+"/"+dataJSON, b)
+	path = path + "/" + dataJSON
+	log.Info("writing zebedeeArticle json to collection", log.Data{"collection": c.Name, "path": path})
+	if err := writeToFile(path, b); err != nil {
+		return migration.Error{
+			Message:     "failed to write article json",
+			OriginalErr: err,
+			Params:      log.Data{"collection": c.Name, "path": path},
+		}
+	}
+	log.Debug("zebedeeArticle created successfully", log.Data{"collection": c.Name, "path": path})
+	return nil
 }
 
 func newCollectionID(collectionName string) string {
@@ -155,7 +171,11 @@ func newCollectionID(collectionName string) string {
 
 func writeToFile(path string, b []byte) error {
 	if err := ioutil.WriteFile(path, b, 0644); err != nil {
-		return CollectionError{"failed to write json file", err}
+		return migration.Error{
+			Message:     "failed to write json file",
+			OriginalErr: err,
+			Params:      log.Data{"path": path},
+		}
 	}
 	return nil
 }
