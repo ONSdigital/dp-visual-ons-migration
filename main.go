@@ -50,6 +50,8 @@ func main() {
 		}
 
 		a := zebedee.CreateArticle(article, visualItem)
+		a.FixInteractiveLinks()
+
 		if err := col.AddArticle(a, article); err != nil {
 			exit(err)
 		}

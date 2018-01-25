@@ -5,10 +5,17 @@ import (
 	"fmt"
 	"github.com/mmcdole/gofeed"
 	"github.com/ONSdigital/dp-visual-ons-migration/migration"
+	"regexp"
+	"strings"
 )
 
-var (
-	pageType = "article"
+const (
+	iframeTagRegex         = "\\[iframe url[ ]*=[ ]*.+]"
+	openIFrameTagRegex     = "\\[iframe url[ ]*=[ ]*"
+	closeIFrameTag         = "]"
+	onsInteractiveOpenTag  = "<ons-interactive url="
+	onsInteractiveCloseTag = " full-width=\"false\"/>"
+	pageType               = "article"
 )
 
 func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
@@ -97,4 +104,25 @@ type Contact struct {
 	Email string `json:"email"`
 	Name  string `json:"name"`
 	Phone string `json:"telephone"`
+}
+
+func (a *Article) FixInteractiveLinks() {
+	wpIframeRE := regexp.MustCompile(iframeTagRegex)
+	wpIframeOpenRE := regexp.MustCompile(openIFrameTagRegex)
+
+	updatedSections := make([]MarkdownSection, 0)
+
+	for _, section := range a.Sections {
+		wpIframeLinks := wpIframeRE.FindAllString(section.Markdown, -1)
+
+		for _, originalLink := range wpIframeLinks {
+			updated := wpIframeOpenRE.ReplaceAllString(originalLink, onsInteractiveOpenTag)
+			updated = strings.Replace(updated, closeIFrameTag, onsInteractiveCloseTag, 1)
+
+			section.Markdown = strings.Replace(section.Markdown, originalLink, updated, 1)
+			updatedSections = append(updatedSections, section)
+		}
+	}
+
+	a.Sections = updatedSections
 }
