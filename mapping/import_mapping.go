@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"io"
 	"github.com/ONSdigital/go-ns/log"
-	"encoding/json"
 	"strings"
 	"regexp"
 )
@@ -20,7 +19,7 @@ type MigrationDetails struct {
 	VisualURL    string   `json:"visualURL"`
 }
 
-func ParseMapping(filename string) (*MigrationDetails, error) {
+func ParseMigrationFile(filename string) ([]*MigrationDetails, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -52,24 +51,20 @@ func ParseMapping(filename string) (*MigrationDetails, error) {
 		mapping = append(mapping, row)
 	}
 
-	line := mapping[0]
-	m := &MigrationDetails{
-		PublishDate:  strings.TrimSpace(line[0]),
-		PostTitle:    strings.TrimSpace(line[1]),
-		Title:        strings.TrimSpace(line[2]),
-		TaxonomyURI:  strings.TrimSpace(line[3]),
-		RelatedLinks: toSlice(line[4], ","),
-		Keywords:     toSlice(line[5], ";"),
-		VisualURL:    strings.TrimSpace(line[6]),
+	migrationPlan := make([]*MigrationDetails, 0)
+	for _, line := range mapping {
+		migrationPlan = append(migrationPlan, &MigrationDetails{
+			PublishDate:  strings.TrimSpace(line[0]),
+			PostTitle:    strings.TrimSpace(line[1]),
+			Title:        strings.TrimSpace(line[2]),
+			TaxonomyURI:  strings.TrimSpace(line[3]),
+			RelatedLinks: toSlice(line[4], ","),
+			Keywords:     toSlice(line[5], ";"),
+			VisualURL:    strings.TrimSpace(line[6]),
+		})
 	}
 
-	b, err := json.MarshalIndent(m, "", "	")
-	if err != nil {
-		return nil, err
-	}
-	log.Debug("record", log.Data{"->": string(b)})
-
-	return m, nil
+	return migrationPlan, nil
 }
 
 func (m *MigrationDetails) GetTaxonomyURI() string {

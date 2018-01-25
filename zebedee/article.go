@@ -4,9 +4,14 @@ import (
 	"github.com/ONSdigital/dp-visual-ons-migration/mapping"
 	"time"
 	"fmt"
+	"github.com/mmcdole/gofeed"
 )
 
-func CreateArticle(details *mapping.MigrationDetails) *Article {
+var (
+	pageType = "article"
+)
+
+func CreateArticle(details *mapping.MigrationDetails, visualItem *gofeed.Item) *Article {
 	t, err := time.Parse("02.01.06", details.PublishDate)
 	if err != nil {
 		panic(err)
@@ -19,11 +24,11 @@ func CreateArticle(details *mapping.MigrationDetails) *Article {
 		Edition:     fmt.Sprintf("%s %d", t.Month().String(), t.Year()),
 	}
 
-	//encoded := item.Extensions["content"]["encoded"]
+	encoded := visualItem.Extensions["content"]["encoded"]
 
 	section := MarkdownSection{
-		Title:    "Section 1",
-		Markdown: "",
+		Title:    visualItem.Title,
+		Markdown: encoded[0].Value,
 	}
 	return &Article{
 		PDFTable:                  []interface{}{},
@@ -41,7 +46,7 @@ func CreateArticle(details *mapping.MigrationDetails) *Article {
 		RelatedMethodologyArticle: []interface{}{},
 		Versions:                  []interface{}{},
 		URI:                       details.GetTaxonomyURI(),
-		Type:                      "article",
+		Type:                      pageType,
 		Topics:                    []interface{}{},
 	}
 }
