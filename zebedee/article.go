@@ -16,6 +16,16 @@ const (
 	onsInteractiveOpenTag  = "<ons-interactive url="
 	onsInteractiveCloseTag = " full-width=\"true\"/>"
 	pageType               = "article"
+	footnotesRegexPattern  = "\\[footnote].+\\/footnote\\]"
+	footnotesOpenTag       = "[footnote]"
+	footnotesCloseTag      = "[/footnote]"
+	onsFootnoteIndexFMT    = "^%d^"
+	onsFootnotesTitle      = "\n\n###Footnoes:"
+	onsFootnoteFMT         = "\n%d. %s"
+)
+
+var (
+	footnotesRegex = regexp.MustCompile(footnotesRegexPattern)
 )
 
 func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
@@ -33,7 +43,7 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 
 	encoded := visualItem.Extensions["content"]["encoded"]
 
-	section := MarkdownSection{
+	section := &MarkdownSection{
 		Title:    visualItem.Title,
 		Markdown: encoded[0].Value,
 	}
@@ -41,7 +51,7 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 		PDFTable:                  []interface{}{},
 		Description:               desc,
 		IsPrototypeArticle:        true,
-		Sections:                  []MarkdownSection{section},
+		Sections:                  []*MarkdownSection{section},
 		Accordion:                 []interface{}{},
 		RelatedData:               []interface{}{},
 		RelatedDocs:               []interface{}{},
@@ -59,24 +69,24 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 }
 
 type Article struct {
-	PDFTable                  []interface{}     `json:"pdfTable"`
-	IsPrototypeArticle        bool              `json:"isPrototypeArticle"`
-	Sections                  []MarkdownSection `json:"sections"`
-	Accordion                 []interface{}     `json:"accordion"`
-	RelatedData               []interface{}     `json:"relatedData"`
-	RelatedDocs               []interface{}     `json:"relatedDocuments"`
-	Charts                    []interface{}     `json:"charts"`
-	Tables                    []interface{}     `json:"tables"`
-	images                    []interface{}     `json:"images"`
-	Equations                 []interface{}     `json:"equations"`
-	Links                     []interface{}     `json:"links"`
-	RelatedMethodology        []interface{}     `json:"relatedMethodology"`
-	RelatedMethodologyArticle []interface{}     `json:"relatedMethodologyArticle"`
-	Versions                  []interface{}     `json:"versions"`
-	Type                      string            `json:"type"`
-	URI                       string            `json:"uri"`
-	Description               Description       `json:"description"`
-	Topics                    []interface{}     `json:"topics"`
+	PDFTable                  []interface{}      `json:"pdfTable"`
+	IsPrototypeArticle        bool               `json:"isPrototypeArticle"`
+	Sections                  []*MarkdownSection `json:"sections"`
+	Accordion                 []interface{}      `json:"accordion"`
+	RelatedData               []interface{}      `json:"relatedData"`
+	RelatedDocs               []interface{}      `json:"relatedDocuments"`
+	Charts                    []interface{}      `json:"charts"`
+	Tables                    []interface{}      `json:"tables"`
+	images                    []interface{}      `json:"images"`
+	Equations                 []interface{}      `json:"equations"`
+	Links                     []interface{}      `json:"links"`
+	RelatedMethodology        []interface{}      `json:"relatedMethodology"`
+	RelatedMethodologyArticle []interface{}      `json:"relatedMethodologyArticle"`
+	Versions                  []interface{}      `json:"versions"`
+	Type                      string             `json:"type"`
+	URI                       string             `json:"uri"`
+	Description               Description        `json:"description"`
+	Topics                    []interface{}      `json:"topics"`
 }
 
 type MarkdownSection struct {
@@ -106,23 +116,50 @@ type Contact struct {
 	Phone string `json:"telephone"`
 }
 
-func (a *Article) FixInteractiveLinks() {
+func (a *Article) ConvertToONSFormat() {
+	for _, section := range a.Sections {
+		section.ConvertToONSFormat()
+	}
+}
+
+func (s *MarkdownSection) ConvertToONSFormat() *MarkdownSection {
+	s.fixInteractiveLinks()
+	s.fixFootnotes()
+	return s
+}
+
+func (s *MarkdownSection) fixInteractiveLinks() {
 	wpIframeRE := regexp.MustCompile(iframeTagRegex)
 	wpIframeOpenRE := regexp.MustCompile(openIFrameTagRegex)
 
-	updatedSections := make([]MarkdownSection, 0)
+	wpIframeLinks := wpIframeRE.FindAllString(s.Markdown, -1)
 
-	for _, section := range a.Sections {
-		wpIframeLinks := wpIframeRE.FindAllString(section.Markdown, -1)
+	for _, originalLink := range wpIframeLinks {
+		updated := wpIframeOpenRE.ReplaceAllString(originalLink, onsInteractiveOpenTag)
+		updated = strings.Replace(updated, closeIFrameTag, onsInteractiveCloseTag, 1)
 
-		for _, originalLink := range wpIframeLinks {
-			updated := wpIframeOpenRE.ReplaceAllString(originalLink, onsInteractiveOpenTag)
-			updated = strings.Replace(updated, closeIFrameTag, onsInteractiveCloseTag, 1)
+		s.Markdown = strings.Replace(s.Markdown, originalLink, updated, 1)
+	}
+}
 
-			section.Markdown = strings.Replace(section.Markdown, originalLink, updated, 1)
-			updatedSections = append(updatedSections, section)
-		}
+func (s *MarkdownSection) fixFootnotes() {
+	fixedFootnotes := make([]string, 0)
+	wpFootnotes := footnotesRegex.FindAllString(s.Markdown, -1)
+
+	for i, wpFootnote := range wpFootnotes {
+		// extract the footnote content from the tags
+		florenceFootnote := strings.Replace(wpFootnote, footnotesOpenTag, "", -1)
+		florenceFootnote = strings.Replace(florenceFootnote, footnotesCloseTag, "", -1)
+
+		// replace the tags with the index of the footnote
+		s.Markdown = strings.Replace(s.Markdown, wpFootnote, fmt.Sprintf(onsFootnoteIndexFMT, i+1), -1)
+		fixedFootnotes = append(fixedFootnotes, florenceFootnote)
 	}
 
-	a.Sections = updatedSections
+	onsFootnotes := onsFootnotesTitle
+	for i, fn := range fixedFootnotes {
+		onsFootnotes += fmt.Sprintf(onsFootnoteFMT, i+1, fn)
+	}
+
+	s.Markdown += onsFootnotes
 }
