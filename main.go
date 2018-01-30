@@ -50,7 +50,10 @@ func main() {
 		}
 
 		a := zebedee.CreateArticle(article, visualItem)
-		a.ConvertToONSFormat()
+		if err := a.ConvertToONSFormat(); err != nil {
+			log.ErrorC("error while attempting to convert visual post to collection article", err, log.Data{"title": visualItem.Title})
+			exit(err)
+		}
 
 		if err := col.AddArticle(a, article); err != nil {
 			exit(err)

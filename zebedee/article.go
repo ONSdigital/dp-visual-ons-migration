@@ -5,31 +5,16 @@ import (
 	"fmt"
 	"github.com/mmcdole/gofeed"
 	"github.com/ONSdigital/dp-visual-ons-migration/migration"
-	"regexp"
 	"strings"
 )
 
 const (
-	iframeTagRegex         = "\\[iframe url[ ]*=[ ]*.+]"
-	openIFrameTagRegex     = "\\[iframe url[ ]*=[ ]*"
-	closeIFrameTag         = "]"
-	onsInteractiveOpenTag  = "<ons-interactive url="
-	onsInteractiveCloseTag = " full-width=\"true\"/>"
-	pageType               = "article"
-	footnotesRegexPattern  = "\\[footnote].+\\/footnote\\]"
-	footnotesOpenTag       = "[footnote]"
-	footnotesCloseTag      = "[/footnote]"
-	onsFootnoteIndexFMT    = "^%d^"
-	onsFootnotesTitle      = "\n\n###Footnoes:"
-	onsFootnoteFMT         = "\n%d. %s"
-)
-
-var (
-	footnotesRegex = regexp.MustCompile(footnotesRegexPattern)
+	pageType = "article"
+	dateFMT  = "02.01.06"
 )
 
 func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
-	t, err := time.Parse("02.01.06", details.PublishDate)
+	t, err := time.Parse(dateFMT, details.PublishDate)
 	if err != nil {
 		panic(err)
 	}
@@ -116,27 +101,33 @@ type Contact struct {
 	Phone string `json:"telephone"`
 }
 
-func (a *Article) ConvertToONSFormat() {
+func (a *Article) ConvertToONSFormat() error {
 	for _, section := range a.Sections {
-		section.ConvertToONSFormat()
+		if _, err := section.ConvertToONSFormat(); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (s *MarkdownSection) ConvertToONSFormat() *MarkdownSection {
+func (s *MarkdownSection) ConvertToONSFormat() (*MarkdownSection, error) {
+	markdown, err := convertHTMLToONSMarkdown(s.Markdown)
+	if err != nil {
+		return nil, err
+	}
+
+	s.Markdown = markdown
 	s.fixInteractiveLinks()
 	s.fixFootnotes()
-	return s
+	return s, nil
 }
 
 func (s *MarkdownSection) fixInteractiveLinks() {
-	wpIframeRE := regexp.MustCompile(iframeTagRegex)
-	wpIframeOpenRE := regexp.MustCompile(openIFrameTagRegex)
-
-	wpIframeLinks := wpIframeRE.FindAllString(s.Markdown, -1)
+	wpIframeLinks := wpIFrameRX.FindAllString(s.Markdown, -1)
 
 	for _, originalLink := range wpIframeLinks {
-		updated := wpIframeOpenRE.ReplaceAllString(originalLink, onsInteractiveOpenTag)
-		updated = strings.Replace(updated, closeIFrameTag, onsInteractiveCloseTag, 1)
+		updated := wpIFrameOpenRX.ReplaceAllString(originalLink, onsVisualOpenTag)
+		updated = strings.Replace(updated, iFrameCloseTag, onsVisualCloseTag, 1)
 
 		s.Markdown = strings.Replace(s.Markdown, originalLink, updated, 1)
 	}
@@ -144,7 +135,7 @@ func (s *MarkdownSection) fixInteractiveLinks() {
 
 func (s *MarkdownSection) fixFootnotes() {
 	fixedFootnotes := make([]string, 0)
-	wpFootnotes := footnotesRegex.FindAllString(s.Markdown, -1)
+	wpFootnotes := wpFootnotesRX.FindAllString(s.Markdown, -1)
 
 	for i, wpFootnote := range wpFootnotes {
 		// extract the footnote content from the tags
@@ -152,13 +143,13 @@ func (s *MarkdownSection) fixFootnotes() {
 		florenceFootnote = strings.Replace(florenceFootnote, footnotesCloseTag, "", -1)
 
 		// replace the tags with the index of the footnote
-		s.Markdown = strings.Replace(s.Markdown, wpFootnote, fmt.Sprintf(onsFootnoteIndexFMT, i+1), -1)
+		s.Markdown = strings.Replace(s.Markdown, wpFootnote, fmt.Sprintf(onsFootnoteIndex, i+1), -1)
 		fixedFootnotes = append(fixedFootnotes, florenceFootnote)
 	}
 
 	onsFootnotes := onsFootnotesTitle
 	for i, fn := range fixedFootnotes {
-		onsFootnotes += fmt.Sprintf(onsFootnoteFMT, i+1, fn)
+		onsFootnotes += fmt.Sprintf(onsFootnote, i+1, fn)
 	}
 
 	s.Markdown += onsFootnotes
