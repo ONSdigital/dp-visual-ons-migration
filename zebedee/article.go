@@ -6,11 +6,15 @@ import (
 	"github.com/mmcdole/gofeed"
 	"github.com/ONSdigital/dp-visual-ons-migration/migration"
 	"strings"
+	"golang.org/x/net/html"
+	"io"
+	"net/http"
 )
 
 const (
 	pageType = "article"
 	dateFMT  = "02.01.06"
+	hrefTag  = "href"
 )
 
 func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
@@ -22,7 +26,7 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 	desc := Description{
 		Title:       details.Title,
 		Keywords:    details.Keywords,
-		ReleaseDate: "2018-01-22T00:00:00.000Z",
+		ReleaseDate: "2018-01-22T00:00:00.000Z", // TODO need to use the date in the visual post.
 		Edition:     fmt.Sprintf("%s %d", t.Month().String(), t.Year()),
 	}
 
@@ -101,25 +105,18 @@ type Contact struct {
 	Phone string `json:"telephone"`
 }
 
-func (a *Article) ConvertToONSFormat() error {
-	for _, section := range a.Sections {
-		if _, err := section.ConvertToONSFormat(); err != nil {
+func (a *Article) ConvertToONSFormat(plan *migration.Plan) error {
+	for _, s := range a.Sections {
+		markdown, err := convertHTMLToONSMarkdown(s.Markdown, plan)
+		if err != nil {
 			return err
 		}
+
+		s.Markdown = markdown
+		s.fixInteractiveLinks()
+		s.fixFootnotes()
 	}
 	return nil
-}
-
-func (s *MarkdownSection) ConvertToONSFormat() (*MarkdownSection, error) {
-	markdown, err := convertHTMLToONSMarkdown(s.Markdown)
-	if err != nil {
-		return nil, err
-	}
-
-	s.Markdown = markdown
-	s.fixInteractiveLinks()
-	s.fixFootnotes()
-	return s, nil
 }
 
 func (s *MarkdownSection) fixInteractiveLinks() {
@@ -153,4 +150,80 @@ func (s *MarkdownSection) fixFootnotes() {
 	}
 
 	s.Markdown += onsFootnotes
+}
+
+// Convert the visual post content HTML into Florence article markdown.
+func convertHTMLToONSMarkdown(section string, plan *migration.Plan) (string, error) {
+	body := strings.NewReader(section)
+	z := html.NewTokenizer(body)
+	z.AllowCDATA(true)
+
+	markdownBody := ""
+	linkIndex := 1
+	links := make([]string, 0)
+
+htmlTokenizer:
+	for {
+		tt := z.Next()
+
+		switch {
+		case tt == html.ErrorToken:
+			fmt.Println("encountered error " + z.Token().String())
+			break htmlTokenizer
+
+		case tt == html.StartTagToken:
+			t := z.Token()
+
+			if t.Data == OpenATag {
+				link := plan.GetMigratedURL(getHref(t))
+				links = append(links, link)
+				linkBody := ""
+
+			findClosingATag:
+				for {
+					tt = z.Next()
+
+					switch {
+					case tt == html.TextToken:
+						t := z.Token()
+						linkBody += html.UnescapeString(t.String())
+					case tt == html.EndTagToken:
+						t = z.Token()
+						linkIndex += 1
+						break findClosingATag
+					case tt == html.ErrorToken:
+						break findClosingATag
+					}
+				}
+
+				markdownBody += fmt.Sprintf(onsHyperlinkInline, linkBody, linkIndex)
+
+			} else if markdown, ok := htmlMarkdownMapping[t.Data]; ok {
+				markdownBody += markdown
+			}
+		case tt == html.TextToken:
+			t := z.Token()
+
+			markdownBody += html.UnescapeString(t.String())
+		}
+	}
+
+	// now append the links to the bottom of the article in the ONS florence format
+	if len(links) > 0 {
+		markdownBody += "\n\n\n"
+		for i, link := range links {
+			markdownBody += fmt.Sprintf(onsHyperlink, i+1, link)
+		}
+	}
+
+	return markdownBody, nil
+}
+
+func getHref(t html.Token) string {
+	for _, v := range t.Attr {
+		if v.Key == hrefTag {
+			return v.Val
+		}
+	}
+	return ""
 }

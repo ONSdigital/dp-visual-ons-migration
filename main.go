@@ -8,6 +8,7 @@ import (
 	"github.com/ONSdigital/dp-visual-ons-migration/config"
 	"flag"
 	"github.com/ONSdigital/dp-visual-ons-migration/migration"
+	"github.com/mmcdole/gofeed"
 )
 
 func main() {
@@ -25,37 +26,34 @@ func main() {
 	log.Info("configuring collections root directory", log.Data{"dir": cfg.CollectionsDir})
 	zebedee.CollectionsRoot = cfg.CollectionsDir
 
-	migrationArticles, err := migration.ParseMigrationFile(cfg.MigrationFile)
+	plan, err := migration.LoadPlan(cfg.MappingFile, cfg.VisualExportFile)
 	if err != nil {
 		exit(err)
 	}
 
-	visualMapping, err := migration.ParseRSSFeed(cfg.VisualRSSFile)
-	if err != nil {
-		exit(err)
-	}
+	for _, post := range plan.Mapping.PostsToMigrate {
 
-	for _, article := range migrationArticles {
-		if _, ok := visualMapping[article.VisualURL]; !ok {
+		var visualItem *gofeed.Item
+		var ok bool
+
+		if visualItem, ok = plan.VisualExport.Posts[post.VisualURL]; !ok {
 			err := errors.New("visual entry was not found in rss mapping")
-			log.Error(err, log.Data{"visualURL": article.VisualURL})
+			log.Error(err, log.Data{"visualURL": post.VisualURL})
 			exit(err)
 		}
 
-		visualItem := visualMapping[article.VisualURL]
-
-		col, err := zebedee.CreateCollection(article.Title)
+		col, err := zebedee.CreateCollection(post.Title)
 		if err != nil {
 			exit(err)
 		}
 
-		a := zebedee.CreateArticle(article, visualItem)
-		if err := a.ConvertToONSFormat(); err != nil {
-			log.ErrorC("error while attempting to convert visual post to collection article", err, log.Data{"title": visualItem.Title})
+		a := zebedee.CreateArticle(post, visualItem)
+		if err := a.ConvertToONSFormat(plan); err != nil {
+			log.ErrorC("error while attempting to convert visual post to collection post", err, log.Data{"title": visualItem.Title})
 			exit(err)
 		}
 
-		if err := col.AddArticle(a, article); err != nil {
+		if err := col.AddArticle(a, post); err != nil {
 			exit(err)
 		}
 	}

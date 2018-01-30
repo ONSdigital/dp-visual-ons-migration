@@ -8,9 +8,9 @@ import (
 )
 
 type Model struct {
-	MigrationFile  string `yaml:"migration-file"`
-	VisualRSSFile  string `yaml:"visual-rss-file"`
-	CollectionsDir string `yaml:"collections-dir"`
+	MappingFile      string `yaml:"migration-file"`
+	VisualExportFile string `yaml:"visual-rss-file"`
+	CollectionsDir   string `yaml:"collections-dir"`
 }
 
 func Load(filename string) (*Model, error) {
