@@ -7,8 +7,6 @@ import (
 	"github.com/ONSdigital/dp-visual-ons-migration/migration"
 	"strings"
 	"golang.org/x/net/html"
-	"io"
-	"net/http"
 )
 
 const (

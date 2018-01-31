@@ -23,7 +23,7 @@ func LoadPlan(mappingFile string, visualExportFile string) (*Plan, error) {
 		return nil, err
 	}
 
-	visualExport, err := parseVisualExport(visualExportFile)
+	visualExport, err := parseVisualExport(visualExportFile, migrationMapping)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func parseMappingFile(filename string) (*Mapping, error) {
 
 	rows := make([][]string, 0)
 
-	mapping := &Mapping{PostsToMigrate: make([]*Article, 0)}
+	mapping := &Mapping{PostsToMigrate: make(map[string]*Article)}
 	isHeader := true
 
 	reader := csv.NewReader(f)
@@ -76,14 +76,14 @@ func parseMappingFile(filename string) (*Mapping, error) {
 			VisualURL:    strings.TrimSpace(line[6]),
 		}
 
-		mapping.PostsToMigrate = append(mapping.PostsToMigrate, a)
+		mapping.PostsToMigrate[a.VisualURL] = a
 	}
 
 	return mapping, nil
 }
 
 // parse the visual ons rss file into the visual export structure
-func parseVisualExport(filename string) (*VisualExport, error) {
+func parseVisualExport(filename string, m *Mapping) (*VisualExport, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -108,8 +108,10 @@ func parseVisualExport(filename string) (*VisualExport, error) {
 			//log.Info("adding attachment to migration mapping", nil)
 			vm.addAttachment(item)
 		} else if postType == t.Value {
-			//log.Info("adding post to migration mapping", nil)
-			vm.addPost(item)
+			if _, ok := m.PostsToMigrate[item.Link]; ok {
+				log.Info("adding post to migration mapping", log.Data{"visualURL": item.Link})
+				vm.addPost(item)
+			}
 		} else {
 			log.Info("skipping unknown post_type", log.Data{"post_type": t.Value})
 		}
