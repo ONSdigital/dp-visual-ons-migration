@@ -105,15 +105,14 @@ func parseVisualExport(filename string, m *Mapping) (*VisualExport, error) {
 		t := item.Extensions["wp"]["post_type"][0]
 
 		if attachmentType == t.Value {
-			//log.Info("adding attachment to migration mapping", nil)
 			vm.addAttachment(item)
 		} else if postType == t.Value {
 			if _, ok := m.PostsToMigrate[item.Link]; ok {
 				log.Info("adding post to migration mapping", log.Data{"visualURL": item.Link})
 				vm.addPost(item)
+			} else {
+
 			}
-		} else {
-			log.Info("skipping unknown post_type", log.Data{"post_type": t.Value})
 		}
 	}
 	log.Info("mapping generated successfully", nil)

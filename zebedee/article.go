@@ -9,16 +9,18 @@ import (
 )
 
 const (
-	pageType = "article"
-	dateFMT  = "02.01.06"
-	hrefTag  = "href"
+	pageType             = "article"
+	collectionDateFormat = "2006-01-02T03:04:05.000Z"
+	visualDateFormat     = "Mon, 02 Jan 2006 03:02:05 Z0700"
+	hrefTag              = "href"
 )
 
 func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
+
 	desc := Description{
 		Title:       details.Title,
 		Keywords:    details.Keywords,
-		ReleaseDate: "2018-01-22T00:00:00.000Z", // TODO need to use the date in the visual post.
+		ReleaseDate: visualItem.PublishedParsed.Format(collectionDateFormat),
 	}
 
 	encoded := visualItem.Extensions["content"]["encoded"]

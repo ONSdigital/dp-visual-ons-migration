@@ -33,7 +33,6 @@ type Plan struct {
 
 // mapping of the posts to migrate - from -> to.
 type Mapping struct {
-	//PostsToMigrate []*Article
 	PostsToMigrate map[string]*Article
 }
 
