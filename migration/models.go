@@ -16,13 +16,10 @@ type Error struct {
 
 // Article a florence article
 type Article struct {
-	PublishDate  string   `json:"publishDate"`
-	PostTitle    string   `json:"postTitle"`
-	Title        string   `json:"title"`
-	TaxonomyURI  string   `json:"taxonomyURI"`
-	RelatedLinks []string `json:"relatedLinks"`
-	Keywords     []string `json:"keywords"`
-	VisualURL    string   `json:"visualURL"`
+	PostTitle   string   `json:"postTitle"`
+	TaxonomyURI string   `json:"taxonomyURI"`
+	Keywords    []string `json:"keywords"`
+	VisualURL   string   `json:"visualURL"`
 }
 
 // Top level structure holding all the migration details.
@@ -106,5 +103,5 @@ func (m *Article) GetTaxonomyURI() string {
 
 func (m *Article) GetCollectionName() string {
 	r, _ := regexp.Compile("[^a-zA-Z0-9]+")
-	return strings.ToLower(r.ReplaceAllString(m.Title, ""))
+	return strings.ToLower(r.ReplaceAllString(m.PostTitle, ""))
 }

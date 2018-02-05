@@ -42,7 +42,7 @@ func main() {
 			exit(err)
 		}
 
-		col, err := zebedee.CreateCollection(post.Title)
+		col, err := zebedee.CreateCollection(post.PostTitle)
 		if err != nil {
 			exit(err)
 		}

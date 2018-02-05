@@ -67,13 +67,10 @@ func parseMappingFile(filename string) (*Mapping, error) {
 
 	for _, line := range rows {
 		a := &Article{
-			PublishDate:  strings.TrimSpace(line[0]),
-			PostTitle:    strings.TrimSpace(line[1]),
-			Title:        strings.TrimSpace(line[2]),
-			TaxonomyURI:  strings.TrimSpace(line[3]),
-			RelatedLinks: toSlice(line[4], ","),
-			Keywords:     toSlice(line[5], ";"),
-			VisualURL:    strings.TrimSpace(line[6]),
+			PostTitle:   strings.TrimSpace(line[0]),
+			TaxonomyURI: strings.TrimSpace(line[1]),
+			Keywords:    toSlice(line[2], ";"),
+			VisualURL:   strings.TrimSpace(line[3]),
 		}
 
 		mapping.PostsToMigrate[a.VisualURL] = a

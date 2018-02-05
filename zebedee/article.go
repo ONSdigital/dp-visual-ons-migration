@@ -18,7 +18,7 @@ const (
 func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
 
 	desc := Description{
-		Title:       details.Title,
+		Title:       details.PostTitle,
 		Keywords:    details.Keywords,
 		ReleaseDate: visualItem.PublishedParsed.Format(collectionDateFormat),
 	}
