@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strings"
 	"errors"
-	"time"
 	"github.com/ONSdigital/dp-visual-ons-migration/migration"
 )
 
@@ -22,8 +21,7 @@ const (
 	approvalStatus   = "NOT_STARTED"
 	collectionOwner  = "PUBLISHING_SUPPORT"
 	collectionType   = "manual"
-	articleURIFormat = "%s%s/articles/%s/%s"
-	dateLayout       = "02.01.06"
+	articleURIFormat = "%s%s/articles/%s"
 )
 
 var (
@@ -125,19 +123,8 @@ func (c Collection) ResolveInProgress(path string) string {
 }
 
 func (c Collection) AddArticle(zebedeeArticle *Article, visualArticle *migration.Article) error {
-
-	t, err := time.Parse(dateLayout, visualArticle.PublishDate)
-	if err != nil {
-		return migration.Error{
-			Message:     "to parse visual article publish date",
-			OriginalErr: err,
-			Params:      nil,
-		}
-	}
-
 	dir := sanitisedFilename(visualArticle.PostTitle)
-	edition := strings.ToLower(fmt.Sprintf("%s%d", t.Month(), t.Year()))
-	path := fmt.Sprintf(articleURIFormat, c.Metadata.InProgress, visualArticle.TaxonomyURI, dir, edition)
+	path := fmt.Sprintf(articleURIFormat, c.Metadata.InProgress, visualArticle.TaxonomyURI, dir)
 
 	log.Info("making article directories", log.Data{"collection": c.Name, "path": path})
 	if err := os.MkdirAll(path, 0755); err != nil {

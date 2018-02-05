@@ -1,7 +1,6 @@
 package zebedee
 
 import (
-	"time"
 	"fmt"
 	"github.com/mmcdole/gofeed"
 	"github.com/ONSdigital/dp-visual-ons-migration/migration"
@@ -16,16 +15,10 @@ const (
 )
 
 func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
-	t, err := time.Parse(dateFMT, details.PublishDate)
-	if err != nil {
-		panic(err)
-	}
-
 	desc := Description{
 		Title:       details.Title,
 		Keywords:    details.Keywords,
 		ReleaseDate: "2018-01-22T00:00:00.000Z", // TODO need to use the date in the visual post.
-		Edition:     fmt.Sprintf("%s %d", t.Month().String(), t.Year()),
 	}
 
 	encoded := visualItem.Extensions["content"]["encoded"]
@@ -157,7 +150,7 @@ func convertHTMLToONSMarkdown(section string, plan *migration.Plan) (string, err
 	z.AllowCDATA(true)
 
 	markdownBody := ""
-	linkIndex := 1
+	linkIndex := 0
 	links := make([]string, 0)
 
 htmlTokenizer:
