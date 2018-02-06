@@ -6,6 +6,7 @@ import (
 	"github.com/ONSdigital/dp-visual-ons-migration/migration"
 	"strings"
 	"golang.org/x/net/html"
+	"unicode"
 )
 
 const (
@@ -108,6 +109,7 @@ func (a *Article) ConvertToONSFormat(plan *migration.Plan) error {
 		s.Markdown = markdown
 		s.fixInteractiveLinks()
 		s.fixFootnotes()
+		s.fixExplanations()
 	}
 	return nil
 }
@@ -129,11 +131,11 @@ func (s *MarkdownSection) fixFootnotes() {
 
 	for i, wpFootnote := range wpFootnotes {
 		// extract the footnote content from the tags
-		florenceFootnote := strings.Replace(wpFootnote, footnotesOpenTag, "", -1)
-		florenceFootnote = strings.Replace(florenceFootnote, footnotesCloseTag, "", -1)
+		florenceFootnote := strings.Replace(wpFootnote, footnotesOpenTag, "", 1)
+		florenceFootnote = strings.Replace(florenceFootnote, footnotesCloseTag, "", 1)
 
 		// replace the tags with the index of the footnote
-		s.Markdown = strings.Replace(s.Markdown, wpFootnote, fmt.Sprintf(onsFootnoteIndex, i+1), -1)
+		s.Markdown = strings.Replace(s.Markdown, wpFootnote, fmt.Sprintf(onsFootnoteIndex, i+1), 1)
 		fixedFootnotes = append(fixedFootnotes, florenceFootnote)
 	}
 
@@ -143,6 +145,15 @@ func (s *MarkdownSection) fixFootnotes() {
 	}
 
 	s.Markdown += onsFootnotes
+}
+
+func (s *MarkdownSection) fixExplanations() {
+	explanations := explanationRX.FindAllString(s.Markdown, -1)
+	for _, wpExplanation := range explanations {
+		onsPulloutBox := explanationOpenRX.ReplaceAllString(wpExplanation, onsPulloutBoxOpenTag)
+		onsPulloutBox = strings.Replace(onsPulloutBox, "\"]", onsPulloutBoxCloseTag, 1)
+		s.Markdown = strings.Replace(s.Markdown, wpExplanation, onsPulloutBox, 1)
+	}
 }
 
 // Convert the visual post content HTML into Florence article markdown.
@@ -191,15 +202,25 @@ htmlTokenizer:
 
 				markdownBody += fmt.Sprintf(onsHyperlinkInline, linkBody, linkIndex)
 
-			} else if markdown, ok := htmlMarkdownMapping[t.Data]; ok {
+			} else if t.Data == LIOpenTag {
+				markdownBody = trimTrailingWhiteSpace(markdownBody)
+				markdownBody += ulItemPlaceHolder
+			} else if markdown, ok := openTagMarkdown[t.Data]; ok {
+				markdownBody += markdown
+			}
+		case tt == html.EndTagToken:
+			t := z.Token()
+			if markdown, ok := closeTagMarkdown[t.Data]; ok {
 				markdownBody += markdown
 			}
 		case tt == html.TextToken:
 			t := z.Token()
-
 			markdownBody += html.UnescapeString(t.String())
 		}
 	}
+
+	markdownBody = strings.Replace(markdownBody, ulPlaceHolder, "", -1)
+	markdownBody = strings.Replace(markdownBody, ulItemPlaceHolder, "\n- ", -1)
 
 	// now append the links to the bottom of the article in the ONS florence format
 	if len(links) > 0 {
@@ -210,6 +231,12 @@ htmlTokenizer:
 	}
 
 	return markdownBody, nil
+}
+
+func trimTrailingWhiteSpace(body string) string {
+	return strings.TrimRightFunc(body, func(c rune) bool {
+		return unicode.IsSpace(c)
+	})
 }
 
 func getHref(t html.Token) string {
