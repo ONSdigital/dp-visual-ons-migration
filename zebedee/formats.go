@@ -8,7 +8,7 @@ const (
 	iFrameCloseTag     = "]"
 	onsVisualOpenTag   = "<ons-interactive url="
 	onsVisualCloseTag  = " full-width=\"true\"/>"
-	footnotesRXPtn     = "\\[footnote].+\\/footnote\\]"
+	footnotesRXPtn     = "\\[footnote\\].+?\\[\\/footnote\\]$*"
 	footnotesOpenTag   = "[footnote]"
 	footnotesCloseTag  = "[/footnote]"
 	onsFootnoteIndex   = "^%d^"
