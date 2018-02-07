@@ -67,6 +67,10 @@ func CreateCollection(name string) (*Collection, error) {
 
 	collectionRootDir := fmt.Sprintf("%s/%s", CollectionsRoot, name)
 
+	if _, err := os.Stat(collectionRootDir); err == nil {
+		return nil, migration.Error{Message: "collection for this visual migration already exists", Params: log.Data{"path": collectionRootDir}, OriginalErr: nil}
+	}
+
 	metadata := &CollectionMetadata{
 		Root:           collectionRootDir,
 		CollectionJSON: collectionRootDir + ".json",
@@ -97,6 +101,7 @@ func CreateCollection(name string) (*Collection, error) {
 		log.Info("creating collection directory", log.Data{"path": path})
 
 		if err := os.Mkdir(path, 0755); err != nil {
+			os.RemoveAll(collectionRootDir)
 			return nil, migration.Error{
 				Message:     "failed to created collection dir",
 				OriginalErr: err,

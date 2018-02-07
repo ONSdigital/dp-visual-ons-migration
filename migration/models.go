@@ -93,8 +93,28 @@ func (m *VisualExport) addPost(i *gofeed.Item) error {
 	return nil
 }
 
+func (a *Article) Valid() error {
+	if a.PostTitle == "" {
+		return Error{Message: "invalid mapping article title is empty", OriginalErr: nil, Params: nil}
+	}
+	if a.TaxonomyURI == "" {
+		return Error{Message: "invalid mapping article taxonomy uri is empty", OriginalErr: nil, Params: nil}
+	}
+	if a.VisualURL == "" {
+		return Error{Message: "invalid mapping article visual url is empty", OriginalErr: nil, Params: nil}
+	}
+	return nil
+}
+
 func (e Error) Error() string {
-	return e.Message + ": " + e.OriginalErr.Error()
+	msg := ""
+	if e.Message != "" {
+		msg += e.Message + " "
+	}
+	if e.OriginalErr != nil {
+		msg += e.OriginalErr.Error()
+	}
+	return msg
 }
 
 func (m *Article) GetTaxonomyURI() string {
