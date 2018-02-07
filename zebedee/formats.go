@@ -17,13 +17,10 @@ const (
 	onsHyperlinkInline      = "[%s][%d]"
 	onsHyperlink            = "  [%d]: %s\n"
 	OpenATag                = "a"
-	LIOpenTag               = "li"
 	explanationRXPtn        = "\\[explanation[ ]*content[ ]*=[ ]*.+?\"[ ]*\\]"
 	explanationOpenTagRxPtn = "\\[explanation[ ]*content[ ]*=[ ]*\""
 	onsPulloutBoxOpenTag    = "<ons-box align=\"full\">"
 	onsPulloutBoxCloseTag   = "</ons-box>"
-	ulPlaceHolder           = "[ul-start]"
-	ulItemPlaceHolder       = "[ul-item]"
 )
 
 var (
@@ -33,17 +30,36 @@ var (
 	explanationRX     = regexp.MustCompile(explanationRXPtn)
 	explanationOpenRX = regexp.MustCompile(explanationOpenTagRxPtn)
 
-	openTagMarkdown = map[string]string{
-		"h1":     "#",
-		"h2":     "##",
-		"h3":     "###",
-		"h4":     "####",
-		"h5":     "#####",
-		"ul":     ulPlaceHolder,
-		"strong": "**",
+	openPlaceholders = map[string]func(string) string{
+		"h1": func(body string) string {
+			return body + "[h1]"
+		},
+		"h2": func(body string) string {
+			return body + "[h2]"
+		},
+		"h3": func(body string) string {
+			return body + "[h3]"
+		},
+		"h4": func(body string) string {
+			return body + "[h4]"
+		},
+		"ul": func(body string) string {
+			return body + "[ul-start]"
+		},
+		"li": func(body string) string {
+			body = trimTrailingWhiteSpace(body)
+			return body + "[ul-item]"
+		},
 	}
 
-	closeTagMarkdown = map[string]string{
-		"strong": "**",
+	closePlaceholders = map[string]func(string) string{}
+
+	onsMarkdown = map[string]string{
+		"[ul-start]": "",
+		"[ul-item]":  "\n- ",
+		"[h1]":       "#",
+		"[h2]":       "##",
+		"[h3]":       "###",
+		"[h4]":       "####",
 	}
 )

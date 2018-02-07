@@ -27,7 +27,6 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 	encoded := visualItem.Extensions["content"]["encoded"]
 
 	section := &MarkdownSection{
-		Title:    visualItem.Title,
 		Markdown: encoded[0].Value,
 	}
 	return &Article{
@@ -129,22 +128,24 @@ func (s *MarkdownSection) fixFootnotes() {
 	fixedFootnotes := make([]string, 0)
 	wpFootnotes := wpFootnotesRX.FindAllString(s.Markdown, -1)
 
-	for i, wpFootnote := range wpFootnotes {
-		// extract the footnote content from the tags
-		florenceFootnote := strings.Replace(wpFootnote, footnotesOpenTag, "", 1)
-		florenceFootnote = strings.Replace(florenceFootnote, footnotesCloseTag, "", 1)
+	if len(wpFootnotes) > 0 {
 
-		// replace the tags with the index of the footnote
-		s.Markdown = strings.Replace(s.Markdown, wpFootnote, fmt.Sprintf(onsFootnoteIndex, i+1), 1)
-		fixedFootnotes = append(fixedFootnotes, florenceFootnote)
+		for i, wpFootnote := range wpFootnotes {
+			// extract the footnote content from the tags
+			florenceFootnote := strings.Replace(wpFootnote, footnotesOpenTag, "", 1)
+			florenceFootnote = strings.Replace(florenceFootnote, footnotesCloseTag, "", 1)
+			// replace the tags with the index of the footnote
+			s.Markdown = strings.Replace(s.Markdown, wpFootnote, fmt.Sprintf(onsFootnoteIndex, i+1), 1)
+			fixedFootnotes = append(fixedFootnotes, florenceFootnote)
+		}
+
+		onsFootnotes := onsFootnotesTitle
+		for i, fn := range fixedFootnotes {
+			onsFootnotes += fmt.Sprintf(onsFootnote, i+1, fn)
+		}
+
+		s.Markdown += onsFootnotes
 	}
-
-	onsFootnotes := onsFootnotesTitle
-	for i, fn := range fixedFootnotes {
-		onsFootnotes += fmt.Sprintf(onsFootnote, i+1, fn)
-	}
-
-	s.Markdown += onsFootnotes
 }
 
 func (s *MarkdownSection) fixExplanations() {
@@ -174,10 +175,8 @@ htmlTokenizer:
 		case tt == html.ErrorToken:
 			fmt.Println("encountered error " + z.Token().String())
 			break htmlTokenizer
-
 		case tt == html.StartTagToken:
 			t := z.Token()
-
 			if t.Data == OpenATag {
 				link := plan.GetMigratedURL(getHref(t))
 				links = append(links, link)
@@ -185,7 +184,7 @@ htmlTokenizer:
 
 			findClosingATag:
 				for {
-					tt = z.Next()
+					tt := z.Next()
 
 					switch {
 					case tt == html.TextToken:
@@ -202,25 +201,25 @@ htmlTokenizer:
 
 				markdownBody += fmt.Sprintf(onsHyperlinkInline, linkBody, linkIndex)
 
-			} else if t.Data == LIOpenTag {
-				markdownBody = trimTrailingWhiteSpace(markdownBody)
-				markdownBody += ulItemPlaceHolder
-			} else if markdown, ok := openTagMarkdown[t.Data]; ok {
-				markdownBody += markdown
+			} else if applyPlaceholder, ok := openPlaceholders[t.Data]; ok {
+				markdownBody = applyPlaceholder(markdownBody)
 			}
 		case tt == html.EndTagToken:
 			t := z.Token()
-			if markdown, ok := closeTagMarkdown[t.Data]; ok {
-				markdownBody += markdown
+
+			if applyPlaceholder, ok := closePlaceholders[t.Data]; ok {
+				markdownBody = applyPlaceholder(markdownBody)
 			}
+
 		case tt == html.TextToken:
 			t := z.Token()
 			markdownBody += html.UnescapeString(t.String())
 		}
 	}
 
-	markdownBody = strings.Replace(markdownBody, ulPlaceHolder, "", -1)
-	markdownBody = strings.Replace(markdownBody, ulItemPlaceHolder, "\n- ", -1)
+	for placeHolder, val := range onsMarkdown {
+		markdownBody = strings.Replace(markdownBody, placeHolder, val, -1)
+	}
 
 	// now append the links to the bottom of the article in the ONS florence format
 	if len(links) > 0 {

@@ -23,8 +23,6 @@ const (
 
 type Executor struct {
 	plan            *migration.Plan
-	startIndex      int
-	endIndex        int
 	currentRowIndex int
 	errorsCount     int
 }
@@ -53,7 +51,7 @@ func main() {
 		exit(err)
 	}
 
-	e := &Executor{plan: plan, startIndex: 0, endIndex: 9, errorsCount: 0, currentRowIndex: 0}
+	e := &Executor{plan: plan, errorsCount: 0, currentRowIndex: 0}
 	e.migrateArticles()
 
 	if e.errorsCount != 0 {
