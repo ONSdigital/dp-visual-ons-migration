@@ -55,7 +55,7 @@ htmlTokenizer:
 			t := z.Token()
 			if t.Data == "img" {
 
-				imgVal := fmt.Sprintf(imageFormat, getAttr(t))
+				imgVal := fmt.Sprintf(imageFormat, getAttr(t, "src"))
 				markdownBody = appendToBody(links, markdownBody, imgVal)
 			}
 		case tt == html.EndTagToken:

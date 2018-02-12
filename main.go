@@ -15,8 +15,8 @@ func main() {
 	log.HumanReadable = true
 	log.Info("dp-visual-migration", nil)
 
-	cfgFile := flag.String("cfg", "local.yml", "the config to use when running the migration")
-	startIndex := flag.Int("start", 0, "")
+	cfgFile := flag.String("cfg", "config.yml", "the config to use when running the migration")
+	startIndex := flag.Int("start", 1, "")
 	flag.Parse()
 
 	cfg, err := config.Load(*cfgFile)
@@ -27,7 +27,7 @@ func main() {
 	log.Info("configuring collections root directory", log.Data{"dir": cfg.CollectionsDir})
 	zebedee.CollectionsRoot = cfg.CollectionsDir
 
-	plan, err := migration.LoadPlan(cfg, *startIndex)
+	plan, err := migration.LoadPlan(cfg)
 	if err != nil {
 		exit(err)
 	}
@@ -38,7 +38,7 @@ func main() {
 	}
 	defer e.Close()
 
-	e.Migrate()
+	e.Migrate(*startIndex, cfg.BatchSize)
 }
 
 func exit(err error) {

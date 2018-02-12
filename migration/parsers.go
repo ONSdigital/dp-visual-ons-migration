@@ -18,9 +18,9 @@ const (
 	attachmentType   = "attachment"
 )
 
-func LoadPlan(cfg *config.Model, startIndex int) (*Plan, error) {
+func LoadPlan(cfg *config.Model) (*Plan, error) {
 
-	migrationMapping, err := parseMappingFile(cfg.MappingFile, cfg.BatchSize, startIndex)
+	migrationMapping, err := parseMappingFile(cfg.MappingFile)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func LoadPlan(cfg *config.Model, startIndex int) (*Plan, error) {
 }
 
 // Parse the mapping file.
-func parseMappingFile(filename string, batchSize int, startIndex int) (*Mapping, error) {
+func parseMappingFile(filename string) (*Mapping, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, Error{"error while attempting to open migration file", err, log.Data{"filename": filename}}
@@ -50,19 +50,8 @@ func parseMappingFile(filename string, batchSize int, startIndex int) (*Mapping,
 	mapping := &Mapping{ToMigrate: make(map[string]*Article)}
 	isHeader := true
 	reader := csv.NewReader(f)
-	index := 0
-
-	log.Debug("reading mapping file", log.Data{
-		"startIndex": startIndex,
-		"batchSize":  batchSize,
-	})
 
 	for {
-		if batchSize > -1 && len(rows) == batchSize {
-			log.Info("batch size reached", nil)
-			break
-		}
-
 		row, err := reader.Read()
 
 		if err == io.EOF {
@@ -74,26 +63,21 @@ func parseMappingFile(filename string, batchSize int, startIndex int) (*Mapping,
 			return nil, Error{"error while reading migration file", err, nil}
 		}
 
-		index++
-
 		if isHeader {
 			isHeader = false
 			continue
 		}
 
-		if index > startIndex {
-			rows = append(rows, row)
-		} else {
-			log.Debug("skipping row before start index", log.Data{"index": index})
-		}
+		rows = append(rows, row)
 	}
 
 	for _, line := range rows {
 		a := &Article{
 			PostTitle:   strings.TrimSpace(line[0]),
 			TaxonomyURI: strings.TrimSpace(line[1]),
-			Keywords:    toSlice(line[2], ";"),
-			VisualURL:   strings.TrimSpace(line[3]),
+			RelatedLinks: []string{},
+			Keywords:    toSlice(line[3], ";"),
+			VisualURL:   strings.TrimSpace(line[4]),
 		}
 
 		mapping.ArticleURLsOrdered = append(mapping.ArticleURLsOrdered, a.VisualURL)

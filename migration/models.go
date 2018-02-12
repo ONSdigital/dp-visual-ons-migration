@@ -16,10 +16,11 @@ type Error struct {
 
 // Article a florence article
 type Article struct {
-	PostTitle   string   `json:"postTitle"`
-	TaxonomyURI string   `json:"taxonomyURI"`
-	Keywords    []string `json:"keywords"`
-	VisualURL   string   `json:"visualURL"`
+	PostTitle    string   `json:"postTitle"`
+	TaxonomyURI  string   `json:"taxonomyURI"`
+	RelatedLinks []string `json:"links"`
+	Keywords     []string `json:"keywords"`
+	VisualURL    string   `json:"visualURL"`
 }
 
 // Top level structure holding all the migration details.

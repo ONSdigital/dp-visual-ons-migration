@@ -67,8 +67,23 @@ func New(plan *migration.Plan, startIndex int) (*Executor, error) {
 	}, nil
 }
 
-func (e *Executor) Migrate() {
-	for _, migrationURL := range e.plan.Mapping.ArticleURLsOrdered {
+func (e *Executor) Migrate(start int, batchSize int) {
+	end := start + batchSize
+
+	if end > len(e.plan.Mapping.ArticleURLsOrdered) {
+		log.Debug("batch size exceeds input total input length, reducing batch size", log.Data{
+			"original": batchSize,
+			"new":      len(e.plan.Mapping.ArticleURLsOrdered),
+		})
+		batchSize = len(e.plan.Mapping.ArticleURLsOrdered)
+	}
+
+	// use the list to maintain the order in which the entries appear in the file
+	log.Info("processing batch", log.Data{"start": start, "end": end})
+
+	batch := e.plan.Mapping.ArticleURLsOrdered[start:end]
+
+	for _, migrationURL := range batch {
 		article, _ := e.plan.Mapping.ToMigrate[migrationURL]
 
 		if err := article.Valid(); err != nil {
@@ -117,6 +132,7 @@ func (e *Executor) logMigrationOutcome(err error, article *migration.Article, co
 }
 
 func (e *Executor) logError(err error, post *migration.Article, collectionName string) {
+	log.ErrorC("error while processing mapping entry", err, log.Data{"rowIndex": e.currentRowIndex})
 	e.errWriter.Write([]string{strconv.Itoa(e.currentRowIndex), err.Error(), post.VisualURL, post.TaxonomyURI, collectionName})
 	e.errorsCount++
 
