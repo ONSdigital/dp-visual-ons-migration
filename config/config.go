@@ -8,9 +8,11 @@ import (
 )
 
 type Model struct {
-	MappingFile      string `yaml:"migration-file"`
-	VisualExportFile string `yaml:"visual-rss-file"`
-	CollectionsDir   string `yaml:"collections-dir"`
+	MappingFile         string `yaml:"migration-file"`
+	VisualExportFile    string `yaml:"visual-rss-file"`
+	CollectionsDir      string `yaml:"collections-dir"`
+	BatchSize           int    `yaml:"batch-size"`
+	NationalArchivesURL string `yaml:"national-archives-url"`
 }
 
 func Load(filename string) (*Model, error) {

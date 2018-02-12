@@ -24,13 +24,16 @@ type Article struct {
 
 // Top level structure holding all the migration details.
 type Plan struct {
-	VisualExport *VisualExport
-	Mapping      *Mapping
+	VisualExport        *VisualExport
+	Mapping             *Mapping
+	NationalArchivesURL string
 }
 
 // mapping of the posts to migrate - from -> to.
 type Mapping struct {
-	PostsToMigrate map[string]*Article
+	ArticleURLsOrdered []string
+	ToMigrate          map[string]*Article
+	NotToMigrated      map[string]*Article
 }
 
 type Attachment struct {
@@ -57,13 +60,16 @@ func (p *Plan) GetMigratedURL(current string) string {
 	}
 
 	// otherwise check if the url is a migrated visual post then return the URL of where the post will be migrated to
-	for _, post := range p.Mapping.PostsToMigrate {
-		if post.VisualURL == current {
-			return post.TaxonomyURI
-		}
+	if migrationPost, ok := p.Mapping.ToMigrate[current]; ok {
+		return migrationPost.TaxonomyURI
 	}
 
-	// its not a visual link - so do nothing.
+	// if the url is a visual post but its not in the migration mapping we need to redirect it to NA
+	if _, ok := p.VisualExport.Posts[current]; ok {
+		return p.NationalArchivesURL + current
+	}
+
+	// its not a visual post or attachment - so no transformation required nothing.
 	return current
 }
 

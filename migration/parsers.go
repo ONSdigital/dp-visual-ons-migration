@@ -7,6 +7,7 @@ import (
 	"github.com/ONSdigital/go-ns/log"
 	"strings"
 	"github.com/mmcdole/gofeed"
+	"github.com/ONSdigital/dp-visual-ons-migration/config"
 )
 
 const (
@@ -17,22 +18,27 @@ const (
 	attachmentType   = "attachment"
 )
 
-func LoadPlan(mappingFile string, visualExportFile string) (*Plan, error) {
-	migrationMapping, err := parseMappingFile(mappingFile)
+func LoadPlan(cfg *config.Model, startIndex int) (*Plan, error) {
+
+	migrationMapping, err := parseMappingFile(cfg.MappingFile, cfg.BatchSize, startIndex)
 	if err != nil {
 		return nil, err
 	}
 
-	visualExport, err := parseVisualExport(visualExportFile, migrationMapping)
+	visualExport, err := parseVisualExport(cfg.VisualExportFile, migrationMapping)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Plan{Mapping: migrationMapping, VisualExport: visualExport}, nil
+	return &Plan{
+		Mapping:             migrationMapping,
+		VisualExport:        visualExport,
+		NationalArchivesURL: cfg.NationalArchivesURL,
+	}, nil
 }
 
 // Parse the mapping file.
-func parseMappingFile(filename string) (*Mapping, error) {
+func parseMappingFile(filename string, batchSize int, startIndex int) (*Mapping, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, Error{"error while attempting to open migration file", err, log.Data{"filename": filename}}
@@ -41,28 +47,45 @@ func parseMappingFile(filename string) (*Mapping, error) {
 	defer f.Close()
 
 	rows := make([][]string, 0)
-
-	mapping := &Mapping{PostsToMigrate: make(map[string]*Article)}
+	mapping := &Mapping{ToMigrate: make(map[string]*Article)}
 	isHeader := true
-
 	reader := csv.NewReader(f)
+	index := 0
+
+	log.Debug("reading mapping file", log.Data{
+		"startIndex": startIndex,
+		"batchSize":  batchSize,
+	})
 
 	for {
+		if batchSize > -1 && len(rows) == batchSize {
+			log.Info("batch size reached", nil)
+			break
+		}
+
 		row, err := reader.Read()
+
 		if err == io.EOF {
 			log.Info("end of csv reached", nil)
 			break
 		}
+
 		if err != nil {
 			return nil, Error{"error while reading migration file", err, nil}
 		}
+
+		index++
 
 		if isHeader {
 			isHeader = false
 			continue
 		}
 
-		rows = append(rows, row)
+		if index > startIndex {
+			rows = append(rows, row)
+		} else {
+			log.Debug("skipping row before start index", log.Data{"index": index})
+		}
 	}
 
 	for _, line := range rows {
@@ -73,7 +96,8 @@ func parseMappingFile(filename string) (*Mapping, error) {
 			VisualURL:   strings.TrimSpace(line[3]),
 		}
 
-		mapping.PostsToMigrate[a.VisualURL] = a
+		mapping.ArticleURLsOrdered = append(mapping.ArticleURLsOrdered, a.VisualURL)
+		mapping.ToMigrate[a.VisualURL] = a
 	}
 
 	return mapping, nil
@@ -104,7 +128,8 @@ func parseVisualExport(filename string, m *Mapping) (*VisualExport, error) {
 		if attachmentType == t.Value {
 			vm.addAttachment(item)
 		} else if postType == t.Value {
-			if _, ok := m.PostsToMigrate[item.Link]; ok {
+			vm.addPost(item)
+			if _, ok := m.ToMigrate[item.Link]; ok {
 				log.Info("adding post to migration mapping", log.Data{"visualURL": item.Link})
 				vm.addPost(item)
 			} else {

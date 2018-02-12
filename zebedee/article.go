@@ -100,7 +100,7 @@ type Contact struct {
 
 func (a *Article) ConvertToONSFormat(plan *migration.Plan) error {
 	for _, s := range a.Sections {
-		markdown, err := convertHTMLToONSMarkdown(s.Markdown, plan)
+		markdown, err := ConvertHTMLToONSMarkdown(s.Markdown, plan)
 		if err != nil {
 			return err
 		}
@@ -155,81 +155,6 @@ func (s *MarkdownSection) fixExplanations() {
 		onsPulloutBox = strings.Replace(onsPulloutBox, "\"]", onsPulloutBoxCloseTag, 1)
 		s.Markdown = strings.Replace(s.Markdown, wpExplanation, onsPulloutBox, 1)
 	}
-}
-
-// Convert the visual post content HTML into Florence article markdown.
-func convertHTMLToONSMarkdown(section string, plan *migration.Plan) (string, error) {
-	body := strings.NewReader(section)
-	z := html.NewTokenizer(body)
-	z.AllowCDATA(true)
-
-	markdownBody := ""
-	linkIndex := 0
-	links := make([]string, 0)
-
-htmlTokenizer:
-	for {
-		tt := z.Next()
-
-		switch {
-		case tt == html.ErrorToken:
-			fmt.Println("encountered error " + z.Token().String())
-			break htmlTokenizer
-		case tt == html.StartTagToken:
-			t := z.Token()
-			if t.Data == OpenATag {
-				link := plan.GetMigratedURL(getHref(t))
-				links = append(links, link)
-				linkBody := ""
-
-			findClosingATag:
-				for {
-					tt := z.Next()
-
-					switch {
-					case tt == html.TextToken:
-						t := z.Token()
-						linkBody += html.UnescapeString(t.String())
-					case tt == html.EndTagToken:
-						t = z.Token()
-						linkIndex += 1
-						break findClosingATag
-					case tt == html.ErrorToken:
-						break findClosingATag
-					}
-				}
-
-				markdownBody += fmt.Sprintf(onsHyperlinkInline, linkBody, linkIndex)
-
-			} else if applyPlaceholder, ok := openPlaceholders[t.Data]; ok {
-				markdownBody = applyPlaceholder(markdownBody)
-			}
-		case tt == html.EndTagToken:
-			t := z.Token()
-
-			if applyPlaceholder, ok := closePlaceholders[t.Data]; ok {
-				markdownBody = applyPlaceholder(markdownBody)
-			}
-
-		case tt == html.TextToken:
-			t := z.Token()
-			markdownBody += html.UnescapeString(t.String())
-		}
-	}
-
-	for placeHolder, val := range onsMarkdown {
-		markdownBody = strings.Replace(markdownBody, placeHolder, val, -1)
-	}
-
-	// now append the links to the bottom of the article in the ONS florence format
-	if len(links) > 0 {
-		markdownBody += "\n\n\n"
-		for i, link := range links {
-			markdownBody += fmt.Sprintf(onsHyperlink, i+1, link)
-		}
-	}
-
-	return markdownBody, nil
 }
 
 func trimTrailingWhiteSpace(body string) string {

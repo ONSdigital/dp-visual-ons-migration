@@ -21,6 +21,7 @@ const (
 	explanationOpenTagRxPtn = "\\[explanation[ ]*content[ ]*=[ ]*\""
 	onsPulloutBoxOpenTag    = "<ons-box align=\"full\">"
 	onsPulloutBoxCloseTag   = "</ons-box>"
+	imageFormat             = "<img src=\"%s\"/>"
 )
 
 var (

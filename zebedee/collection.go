@@ -61,10 +61,11 @@ type Collection struct {
 	Type                  string              `json:"type"`
 }
 
-func CreateCollection(name string) (*Collection, error) {
-	name = strings.ToLower(validFileNameRegex.ReplaceAllString(name, ""))
-	name = "visual_" + name
+func ToCollectionName(index int, name string) string {
+	return fmt.Sprintf("viz_%d_%s", index, strings.ToLower(validFileNameRegex.ReplaceAllString(name, "")))
+}
 
+func CreateCollection(name string) (*Collection, error) {
 	collectionRootDir := fmt.Sprintf("%s/%s", CollectionsRoot, name)
 
 	if _, err := os.Stat(collectionRootDir); err == nil {
