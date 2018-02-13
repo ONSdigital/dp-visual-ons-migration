@@ -16,7 +16,7 @@ func main() {
 	log.Info("dp-visual-migration", nil)
 
 	cfgFile := flag.String("cfg", "config.yml", "the config to use when running the migration")
-	startIndex := flag.Int("start", 1, "")
+	startIndex := flag.Int("start", 0, "")
 	flag.Parse()
 
 	cfg, err := config.Load(*cfgFile)
