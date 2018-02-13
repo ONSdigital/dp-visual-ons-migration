@@ -14,6 +14,7 @@ const (
 	collectionDateFormat = "2006-01-02T03:04:05.000Z"
 	visualDateFormat     = "Mon, 02 Jan 2006 03:02:05 Z0700"
 	hrefTag              = "href"
+	articleDateFormat    = "2006-01-02"
 )
 
 func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
@@ -29,6 +30,9 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 	section := &MarkdownSection{
 		Markdown: encoded[0].Value,
 	}
+
+	uri := fmt.Sprintf("%s/articles/%s/%s", details.GetTaxonomyURI(), sanitisedFilename(visualItem.Title), visualItem.PublishedParsed.Format(articleDateFormat))
+
 	return &Article{
 		PDFTable:                  []interface{}{},
 		Description:               desc,
@@ -44,7 +48,7 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 		RelatedMethodology:        []interface{}{},
 		RelatedMethodologyArticle: []interface{}{},
 		Versions:                  []interface{}{},
-		URI:                       fmt.Sprintf("%s/articles/%s", details.GetTaxonomyURI(), ToFilename(visualItem.Title)),
+		URI:                       uri,
 		Type:                      pageType,
 		Topics:                    []interface{}{},
 	}

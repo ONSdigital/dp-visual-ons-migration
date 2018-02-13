@@ -8,7 +8,6 @@ import (
 	"github.com/mmcdole/gofeed"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/dp-visual-ons-migration/zebedee"
-	"fmt"
 )
 
 const (
@@ -91,7 +90,8 @@ func (e *Executor) Migrate(start int, batchSize int) {
 			continue
 		}
 
-		collectionName := zebedee.ToCollectionName(e.currentRowIndex + 2, article.PostTitle)
+		// offset the index to align with the input mapping - the header row is ignored and array is indexed from 0
+		collectionName := zebedee.ToCollectionName(e.currentRowIndex+2, article.PostTitle)
 
 		col, err := zebedee.CreateCollection(collectionName)
 		if err != nil {
