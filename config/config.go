@@ -11,6 +11,7 @@ type Model struct {
 	CollectionsDir      string `yaml:"collections-dir"`
 	BatchSize           int    `yaml:"batch-size"`
 	NationalArchivesURL string `yaml:"national-archives-url"`
+	ResultsFilePath     string `yaml:"results-file-path"`
 }
 
 func Load(filename string) (*Model, error) {

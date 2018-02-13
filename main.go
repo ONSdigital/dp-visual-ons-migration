@@ -32,7 +32,7 @@ func main() {
 		exit(err)
 	}
 
-	e, err := executor.New(plan, *startIndex)
+	e, err := executor.New(plan, *startIndex, cfg.ResultsFilePath)
 	if err != nil {
 		exit(err)
 	}

@@ -13,7 +13,6 @@ import (
 const (
 	entryNotFound   = "visual url entry was not found in this version of the wordpress export mapping"
 	conversionErr   = "error while attempting to convert visual post to collection article"
-	resultsFilename = "migration-results.csv"
 )
 
 var (
@@ -45,8 +44,8 @@ func newFile(name string) (*os.File, error) {
 	return f, nil
 }
 
-func New(plan *migration.Plan, startIndex int) (*Executor, error) {
-	resultsFile, _ := newFile(resultsFilename)
+func New(plan *migration.Plan, startIndex int, resultsPath string) (*Executor, error) {
+	resultsFile, _ := newFile(resultsPath)
 	resultsWriter := csv.NewWriter(resultsFile)
 	resultsWriter.Write(resultsFileHeader)
 
