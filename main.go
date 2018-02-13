@@ -24,7 +24,7 @@ func main() {
 		exit(errors.Wrap(err, "failed loading config"))
 	}
 
-	log.Info("configuring collections root directory", log.Data{"dir": cfg.CollectionsDir})
+	//log.Info("configuring collections root directory", log.Data{"dir": cfg.CollectionsDir})
 	zebedee.CollectionsRoot = cfg.CollectionsDir
 
 	plan, err := migration.LoadPlan(cfg)

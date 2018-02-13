@@ -44,7 +44,7 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 		RelatedMethodology:        []interface{}{},
 		RelatedMethodologyArticle: []interface{}{},
 		Versions:                  []interface{}{},
-		URI:                       details.GetTaxonomyURI(),
+		URI:                       fmt.Sprintf("%s/articles/%s", details.GetTaxonomyURI(), ToFilename(visualItem.Title)),
 		Type:                      pageType,
 		Topics:                    []interface{}{},
 	}

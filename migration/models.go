@@ -32,14 +32,15 @@ type Plan struct {
 
 // mapping of the posts to migrate - from -> to.
 type Mapping struct {
-	ArticleURLsOrdered []string
-	ToMigrate          map[string]*Article
+	ToMigrate []*Article
+	//ToMigrate          map[string]*Article
 	NotToMigrated      map[string]*Article
 }
 
 type Attachment struct {
 	Title string
 	URL   *url.URL
+	ID    string
 }
 
 type VisualExport struct {
@@ -54,19 +55,34 @@ func newVisualExport() *VisualExport {
 	}
 }
 
+func (m *Mapping) GetArticleByURL(target string) (*Article, bool) {
+	for _, a := range m.ToMigrate {
+		if target == a.VisualURL {
+			return a, true
+		}
+	}
+	return nil, false
+}
+
 func (p *Plan) GetMigratedURL(current string) string {
-	// check if the url is a migrated visual attachment - if so return the url for its migrated location.
-	if attachment, ok := p.VisualExport.Attachments[current]; ok {
-		return staticONSHost + strings.Replace(attachment.URL.Path, wpAttachmentPath, staticONSPath, 1)
-	}
+	currentURL, _ := url.Parse(current)
+	data := log.Data{"url": current}
 
-	// otherwise check if the url is a migrated visual post then return the URL of where the post will be migrated to
-	if migrationPost, ok := p.Mapping.ToMigrate[current]; ok {
-		return migrationPost.TaxonomyURI
-	}
+	if currentURL.Host == "visual.ons.gov.uk" {
 
-	// if the url is a visual post but its not in the migration mapping we need to redirect it to NA
-	if _, ok := p.VisualExport.Posts[current]; ok {
+		// check if the url is a migrated visual attachment - if so return the url for its migrated location.
+		if attachment, ok := p.VisualExport.Attachments[current]; ok {
+			log.Debug("visual attachment url found", data)
+			return staticONSHost + strings.Replace(attachment.URL.Path, wpAttachmentPath, staticONSPath, 1)
+		}
+
+		// otherwise check if the url is a migrated visual post then return the URL of where the post will be migrated to
+		if migrationPost, ok := p.Mapping.GetArticleByURL(current); ok {
+			log.Debug("visual migration post url found", data)
+			return migrationPost.TaxonomyURI
+		}
+
+		log.Debug("visual url found but not attachment or migration post", data)
 		return p.NationalArchivesURL + current
 	}
 
@@ -81,7 +97,8 @@ func (m *VisualExport) addAttachment(i *gofeed.Item) error {
 		return Error{"failed to parse visual attachment URL", err, log.Data{"title": i.Title, "url": i.Link}}
 	}
 
-	m.Attachments[attachmentURL.String()] = &Attachment{URL: attachmentURL, Title: i.Title}
+	postID := i.Extensions["wp"]["post_id"][0].Value
+	m.Attachments[attachmentURL.String()] = &Attachment{URL: attachmentURL, Title: i.Title, ID: postID}
 	return nil
 }
 
@@ -96,6 +113,15 @@ func (m *VisualExport) addPost(i *gofeed.Item) error {
 		m.Posts[postURL.String()] = i
 	} else {
 		return Error{"duplicate entry in visual RSS xmL", err, log.Data{"title": i.Title, "url": i.Link}}
+	}
+	return nil
+}
+
+func (m *VisualExport) GetThumbNailURL(thumbnailID string) *url.URL {
+	for _, attachment := range m.Attachments {
+		if attachment.ID == thumbnailID {
+			return attachment.URL
+		}
 	}
 	return nil
 }

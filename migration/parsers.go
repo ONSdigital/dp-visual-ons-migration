@@ -47,7 +47,7 @@ func parseMappingFile(filename string) (*Mapping, error) {
 	defer f.Close()
 
 	rows := make([][]string, 0)
-	mapping := &Mapping{ToMigrate: make(map[string]*Article)}
+	mapping := &Mapping{ToMigrate: make([]*Article, 0)}
 	isHeader := true
 	reader := csv.NewReader(f)
 
@@ -73,15 +73,14 @@ func parseMappingFile(filename string) (*Mapping, error) {
 
 	for _, line := range rows {
 		a := &Article{
-			PostTitle:   strings.TrimSpace(line[0]),
-			TaxonomyURI: strings.TrimSpace(line[1]),
+			PostTitle:    strings.TrimSpace(line[0]),
+			TaxonomyURI:  strings.TrimSpace(line[1]),
 			RelatedLinks: []string{},
-			Keywords:    toSlice(line[3], ";"),
-			VisualURL:   strings.TrimSpace(line[4]),
+			Keywords:     toSlice(line[3], ";"),
+			VisualURL:    strings.TrimSpace(line[4]),
 		}
 
-		mapping.ArticleURLsOrdered = append(mapping.ArticleURLsOrdered, a.VisualURL)
-		mapping.ToMigrate[a.VisualURL] = a
+		mapping.ToMigrate = append(mapping.ToMigrate, a)
 	}
 
 	return mapping, nil
@@ -98,14 +97,14 @@ func parseVisualExport(filename string, m *Mapping) (*VisualExport, error) {
 
 	vm := newVisualExport()
 
-	log.Info("attempting to parse RSS export file", nil)
+	//log.Info("attempting to parse RSS export file", nil)
 	fp := gofeed.NewParser()
 	visualFeed, err := fp.Parse(file)
 	if err != nil {
 		return nil, Error{"failed to parse visual RSS feed", err, nil}
 	}
 
-	log.Info("mapping visual posts by post url", nil)
+	//log.Info("mapping visual posts by post url", nil)
 	for _, item := range visualFeed.Items {
 		t := item.Extensions["wp"]["post_type"][0]
 
@@ -113,15 +112,14 @@ func parseVisualExport(filename string, m *Mapping) (*VisualExport, error) {
 			vm.addAttachment(item)
 		} else if postType == t.Value {
 			vm.addPost(item)
-			if _, ok := m.ToMigrate[item.Link]; ok {
-				log.Info("adding post to migration mapping", log.Data{"visualURL": item.Link})
-				vm.addPost(item)
-			} else {
 
+			if _, ok := m.GetArticleByURL(item.Link); ok {
+				//log.Info("adding post to migration mapping", log.Data{"visualURL": item.Link})
+				vm.addPost(item)
 			}
 		}
 	}
-	log.Info("mapping generated successfully", nil)
+	//log.Info("mapping generated successfully", nil)
 	return vm, nil
 }
 

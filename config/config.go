@@ -3,8 +3,6 @@ package config
 import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"encoding/json"
-	"github.com/ONSdigital/go-ns/log"
 )
 
 type Model struct {
@@ -25,9 +23,6 @@ func Load(filename string) (*Model, error) {
 	if err := yaml.Unmarshal(source, &cfg); err != nil {
 		return nil, err
 	}
-
-	b, _ := json.MarshalIndent(cfg, "", " ")
-	log.Info("successfully loaded configuration", log.Data{"config": string(b)})
 
 	return &cfg, nil
 }
