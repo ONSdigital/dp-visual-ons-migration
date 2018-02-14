@@ -98,7 +98,7 @@ func (e *Executor) Migrate(start int, batchSize int) {
 			continue
 		}
 
-		a := zebedee.CreateArticle(article, visualItem)
+		a := zebedee.CreateArticle(article, visualItem, e.plan.GetMigratedURL)
 		if err := a.ConvertToONSFormat(e.plan); err != nil {
 			err := migration.Error{Message: conversionErr, OriginalErr: err, Params: log.Data{"title": visualItem.Title}}
 			e.logMigrationOutcome(err, article.VisualURL, a.URI, collectionName)

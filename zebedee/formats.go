@@ -22,6 +22,8 @@ const (
 	onsPulloutBoxOpenTag    = "<ons-box align=\"full\">"
 	onsPulloutBoxCloseTag   = "</ons-box>"
 	imageFormat             = "<img src=\"%s\"/>"
+	moreInfoLinkRXPtn       = "^more_information_\\d+_url$"
+	moreInfoTitleRXPtn       = "^more_information_\\d+_link_title$"
 )
 
 var (
@@ -30,6 +32,8 @@ var (
 	wpIFrameOpenRX    = regexp.MustCompile(iFrameOpenRXPtn)
 	explanationRX     = regexp.MustCompile(explanationRXPtn)
 	explanationOpenRX = regexp.MustCompile(explanationOpenTagRxPtn)
+	moreInfoURLRX     = regexp.MustCompile(moreInfoLinkRXPtn)
+	moreInfoTitleRX   = regexp.MustCompile(moreInfoTitleRXPtn)
 
 	openPlaceholders = map[string]func(string) string{
 		"h1": func(body string) string {

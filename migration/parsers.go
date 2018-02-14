@@ -8,10 +8,13 @@ import (
 	"strings"
 	"github.com/mmcdole/gofeed"
 	"github.com/ONSdigital/dp-visual-ons-migration/config"
+	"fmt"
+	"github.com/ONSdigital/dp-visual-ons-migration/util"
 )
 
 const (
 	staticONSHost    = "https://static.ons.gov.uk"
+	ONSSite          = "https://www.ons.gov.uk"
 	wpAttachmentPath = "/wp-content/uploads/"
 	staticONSPath    = "/visual/"
 	postType         = "post"
@@ -72,6 +75,7 @@ func parseMappingFile(filename string) (*Mapping, error) {
 	}
 
 	for _, line := range rows {
+
 		a := &Article{
 			PostTitle:    strings.TrimSpace(line[0]),
 			TaxonomyURI:  strings.TrimSpace(line[1]),
@@ -113,9 +117,10 @@ func parseVisualExport(filename string, m *Mapping) (*VisualExport, error) {
 		} else if postType == t.Value {
 			vm.addPost(item)
 
-			if _, ok := m.GetArticleByURL(item.Link); ok {
+			if a, ok := m.GetArticleByURL(item.Link); ok {
 				//log.Info("adding post to migration mapping", log.Data{"visualURL": item.Link})
 				vm.addPost(item)
+				a.TaxonomyURI = fmt.Sprintf("%s/articles/%s/%s", a.TaxonomyURI, util.SanitisedFilename(item.Title), item.PublishedParsed.Format("2006-01-02"))
 			}
 		}
 	}

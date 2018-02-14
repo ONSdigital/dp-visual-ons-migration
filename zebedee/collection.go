@@ -8,9 +8,9 @@ import (
 	"os"
 	"github.com/ONSdigital/go-ns/log"
 	"regexp"
-	"strings"
 	"errors"
 	"github.com/ONSdigital/dp-visual-ons-migration/migration"
+	"github.com/ONSdigital/dp-visual-ons-migration/util"
 )
 
 const (
@@ -61,7 +61,7 @@ type Collection struct {
 }
 
 func ToCollectionName(index int, name string) string {
-	return fmt.Sprintf("viz_%d_%s", index, sanitisedFilename(name))
+	return fmt.Sprintf("viz_%d_%s", index, util.SanitisedFilename(name))
 }
 
 func CreateCollection(name string) (*Collection, error) {
@@ -164,8 +164,4 @@ func writeToFile(path string, b []byte) error {
 		}
 	}
 	return nil
-}
-
-func sanitisedFilename(name string) string {
-	return strings.ToLower(validFileNameRegex.ReplaceAllString(name, ""))
 }

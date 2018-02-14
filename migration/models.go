@@ -33,8 +33,7 @@ type Plan struct {
 // mapping of the posts to migrate - from -> to.
 type Mapping struct {
 	ToMigrate []*Article
-	//ToMigrate          map[string]*Article
-	NotToMigrated      map[string]*Article
+	NotToMigrated map[string]*Article
 }
 
 type Attachment struct {
@@ -79,7 +78,7 @@ func (p *Plan) GetMigratedURL(current string) string {
 		// otherwise check if the url is a migrated visual post then return the URL of where the post will be migrated to
 		if migrationPost, ok := p.Mapping.GetArticleByURL(current); ok {
 			log.Debug("visual migration post url found", data)
-			return migrationPost.TaxonomyURI
+			return ONSSite + migrationPost.TaxonomyURI
 		}
 
 		log.Debug("visual url found but not attachment or migration post", data)

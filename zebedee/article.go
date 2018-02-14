@@ -7,6 +7,8 @@ import (
 	"strings"
 	"golang.org/x/net/html"
 	"unicode"
+	"strconv"
+	"sort"
 )
 
 const (
@@ -17,7 +19,7 @@ const (
 	articleDateFormat    = "2006-01-02"
 )
 
-func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
+func CreateArticle(details *migration.Article, visualItem *gofeed.Item, getMigratedURL func(current string) string) *Article {
 
 	desc := Description{
 		Title:       details.PostTitle,
@@ -31,7 +33,12 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 		Markdown: encoded[0].Value,
 	}
 
-	uri := fmt.Sprintf("%s/articles/%s/%s", details.GetTaxonomyURI(), sanitisedFilename(visualItem.Title), visualItem.PublishedParsed.Format(articleDateFormat))
+	links := make([]*RelatedLink, 0)
+
+	links = GetRelatedLinks(visualItem)
+	sort.Slice(links, func(i, j int) bool {
+		return links[i].ID < links[j].ID
+	})
 
 	return &Article{
 		PDFTable:                  []interface{}{},
@@ -44,11 +51,11 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 		Charts:                    []interface{}{},
 		Tables:                    []interface{}{},
 		Equations:                 []interface{}{},
-		Links:                     []interface{}{},
+		Links:                     links,
 		RelatedMethodology:        []interface{}{},
 		RelatedMethodologyArticle: []interface{}{},
 		Versions:                  []interface{}{},
-		URI:                       uri,
+		URI:                       details.TaxonomyURI,
 		Type:                      pageType,
 		Topics:                    []interface{}{},
 	}
@@ -65,7 +72,7 @@ type Article struct {
 	Tables                    []interface{}      `json:"tables"`
 	images                    []interface{}      `json:"images"`
 	Equations                 []interface{}      `json:"equations"`
-	Links                     []interface{}      `json:"links"`
+	Links                     []*RelatedLink     `json:"links"`
 	RelatedMethodology        []interface{}      `json:"relatedMethodology"`
 	RelatedMethodologyArticle []interface{}      `json:"relatedMethodologyArticle"`
 	Versions                  []interface{}      `json:"versions"`
@@ -100,6 +107,51 @@ type Contact struct {
 	Email string `json:"email"`
 	Name  string `json:"name"`
 	Phone string `json:"telephone"`
+}
+
+type RelatedLink struct {
+	Title string `json:"title"`
+	URI   string `json:"uri"`
+	ID    int    `json:"-"`
+}
+
+func GetRelatedLinks(visualItem *gofeed.Item) []*RelatedLink {
+	metadata := visualItem.Extensions["wp"]["postmeta"]
+	rawLinks := map[int]*RelatedLink{}
+
+	for _, mi := range metadata {
+
+		metaKey := mi.Children["meta_key"][0]
+		if moreInfoURLRX.MatchString(metaKey.Value) {
+			index := metaKey.Value
+			index = strings.Replace(index, "more_information_", "", 1)
+			index = strings.Replace(index, "_url", "", 1)
+			i, _ := strconv.Atoi(index)
+
+			if l, ok := rawLinks[i]; ok {
+				l.URI = mi.Children["meta_value"][0].Value
+			} else {
+				rawLinks[i] = &RelatedLink{ID: i, URI: mi.Children["meta_value"][0].Value}
+			}
+		} else if moreInfoTitleRX.MatchString(metaKey.Value) {
+			index := metaKey.Value
+			index = strings.Replace(index, "more_information_", "", 1)
+			index = strings.Replace(index, "_link_title", "", 1)
+			i, _ := strconv.Atoi(index)
+
+			if l, ok := rawLinks[i]; ok {
+				l.Title = mi.Children["meta_value"][0].Value
+			} else {
+				rawLinks[i] = &RelatedLink{ID: i, Title: mi.Children["meta_value"][0].Value}
+			}
+		}
+	}
+
+	links := make([]*RelatedLink, 0)
+	for _, l := range rawLinks {
+		links = append(links, l)
+	}
+	return links
 }
 
 func (a *Article) ConvertToONSFormat(plan *migration.Plan) error {
