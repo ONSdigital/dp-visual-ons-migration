@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	entryNotFound   = "visual url entry was not found in this version of the wordpress export mapping"
-	conversionErr   = "error while attempting to convert visual post to collection article"
+	entryNotFound = "visual url entry was not found in this version of the wordpress export mapping"
+	conversionErr = "error while attempting to convert visual post to collection article"
 )
 
 var (
@@ -98,11 +98,21 @@ func (e *Executor) Migrate(start int, batchSize int) {
 			continue
 		}
 
-		a := zebedee.CreateArticle(article, visualItem, e.plan.GetMigratedURL)
+		a := zebedee.CreateArticle(article, visualItem)
 		if err := a.ConvertToONSFormat(e.plan); err != nil {
 			err := migration.Error{Message: conversionErr, OriginalErr: err, Params: log.Data{"title": visualItem.Title}}
 			e.logMigrationOutcome(err, article.VisualURL, a.URI, collectionName)
 			continue
+		}
+
+		if uri := e.plan.VisualExport.GetThumbnailURL(a.ImageURI); uri != nil {
+			e.plan.GetMigratedURL(uri.String())
+			imgURI, err := e.plan.GetMigratedURL(uri.String())
+			if err != nil {
+				e.logMigrationOutcome(err, article.VisualURL, a.URI, collectionName)
+				continue
+			}
+			a.ImageURI = imgURI
 		}
 
 		if err := col.AddArticle(a, article); err != nil {

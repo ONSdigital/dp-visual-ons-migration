@@ -36,9 +36,13 @@ htmlTokenizer:
 			if t.Data == OpenATag {
 				linkIndex += 1
 
+				uri, err := plan.GetMigratedURL(getHref(t))
+				if err != nil {
+					return "", err
+				}
 				href := &Href{
 					Index: linkIndex,
-					URL:   plan.GetMigratedURL(getHref(t)),
+					URL:   uri,
 					Text:  "",
 					Close: false,
 				}

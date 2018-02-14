@@ -19,7 +19,7 @@ const (
 	articleDateFormat    = "2006-01-02"
 )
 
-func CreateArticle(details *migration.Article, visualItem *gofeed.Item, getMigratedURL func(current string) string) *Article {
+func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article {
 
 	desc := Description{
 		Title:       details.PostTitle,
@@ -35,7 +35,8 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item, getMigra
 
 	links := make([]*RelatedLink, 0)
 
-	links = GetRelatedLinks(visualItem)
+	var thumbnailID string
+	links, thumbnailID = ParseMetadata(visualItem)
 	sort.Slice(links, func(i, j int) bool {
 		return links[i].ID < links[j].ID
 	})
@@ -58,6 +59,7 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item, getMigra
 		URI:                       details.TaxonomyURI,
 		Type:                      pageType,
 		Topics:                    []interface{}{},
+		ImageURI:                  thumbnailID,
 	}
 }
 
@@ -80,6 +82,7 @@ type Article struct {
 	URI                       string             `json:"uri"`
 	Description               Description        `json:"description"`
 	Topics                    []interface{}      `json:"topics"`
+	ImageURI                  string             `json:"imageURI"`
 }
 
 type MarkdownSection struct {
@@ -115,9 +118,10 @@ type RelatedLink struct {
 	ID    int    `json:"-"`
 }
 
-func GetRelatedLinks(visualItem *gofeed.Item) []*RelatedLink {
+func ParseMetadata(visualItem *gofeed.Item) ([]*RelatedLink, string) {
 	metadata := visualItem.Extensions["wp"]["postmeta"]
 	rawLinks := map[int]*RelatedLink{}
+	thumbnailID := ""
 
 	for _, mi := range metadata {
 
@@ -144,6 +148,8 @@ func GetRelatedLinks(visualItem *gofeed.Item) []*RelatedLink {
 			} else {
 				rawLinks[i] = &RelatedLink{ID: i, Title: mi.Children["meta_value"][0].Value}
 			}
+		} else if metaKey.Value == "_thumbnail_id" {
+			thumbnailID = mi.Children["meta_value"][0].Value
 		}
 	}
 
@@ -151,7 +157,7 @@ func GetRelatedLinks(visualItem *gofeed.Item) []*RelatedLink {
 	for _, l := range rawLinks {
 		links = append(links, l)
 	}
-	return links
+	return links, thumbnailID
 }
 
 func (a *Article) ConvertToONSFormat(plan *migration.Plan) error {

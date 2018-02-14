@@ -32,7 +32,7 @@ type Plan struct {
 
 // mapping of the posts to migrate - from -> to.
 type Mapping struct {
-	ToMigrate []*Article
+	ToMigrate     []*Article
 	NotToMigrated map[string]*Article
 }
 
@@ -63,8 +63,11 @@ func (m *Mapping) GetArticleByURL(target string) (*Article, bool) {
 	return nil, false
 }
 
-func (p *Plan) GetMigratedURL(current string) string {
-	currentURL, _ := url.Parse(current)
+func (p *Plan) GetMigratedURL(current string) (string, error) {
+	currentURL, err := url.Parse(current)
+	if err != nil {
+		return "", Error{"error while attempting to parse URL", err, log.Data{"url": current}}
+	}
 	data := log.Data{"url": current}
 
 	if currentURL.Host == "visual.ons.gov.uk" {
@@ -72,21 +75,21 @@ func (p *Plan) GetMigratedURL(current string) string {
 		// check if the url is a migrated visual attachment - if so return the url for its migrated location.
 		if attachment, ok := p.VisualExport.Attachments[current]; ok {
 			log.Debug("visual attachment url found", data)
-			return staticONSHost + strings.Replace(attachment.URL.Path, wpAttachmentPath, staticONSPath, 1)
+			return staticONSHost + strings.Replace(attachment.URL.Path, wpAttachmentPath, staticONSPath, 1), nil
 		}
 
 		// otherwise check if the url is a migrated visual post then return the URL of where the post will be migrated to
 		if migrationPost, ok := p.Mapping.GetArticleByURL(current); ok {
 			log.Debug("visual migration post url found", data)
-			return ONSSite + migrationPost.TaxonomyURI
+			return ONSSite + migrationPost.TaxonomyURI, nil
 		}
 
 		log.Debug("visual url found but not attachment or migration post", data)
-		return p.NationalArchivesURL + current
+		return p.NationalArchivesURL + current, nil
 	}
 
 	// its not a visual post or attachment - so no transformation required nothing.
-	return current
+	return current, nil
 }
 
 // add an attachment to the visual mapping
@@ -116,7 +119,8 @@ func (m *VisualExport) addPost(i *gofeed.Item) error {
 	return nil
 }
 
-func (m *VisualExport) GetThumbNailURL(thumbnailID string) *url.URL {
+func (m *VisualExport) GetThumbnailURL(thumbnailID string) *url.URL {
+
 	for _, attachment := range m.Attachments {
 		if attachment.ID == thumbnailID {
 			return attachment.URL
