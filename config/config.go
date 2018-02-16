@@ -9,7 +9,6 @@ type Model struct {
 	MappingFile         string `yaml:"migration-file"`
 	VisualExportFile    string `yaml:"visual-rss-file"`
 	CollectionsDir      string `yaml:"collections-dir"`
-	BatchSize           int    `yaml:"batch-size"`
 	NationalArchivesURL string `yaml:"national-archives-url"`
 	ResultsFilePath     string `yaml:"results-file-path"`
 }

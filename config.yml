@@ -1,6 +1,5 @@
 migration-file: "resources/migration-mapping.csv"
 visual-rss-file: "resources/visualons.wordpress.2018-01-17.xml"
 collections-dir: "/content/collections"
-results-file-path: "/content/migration-results.csv"
-batch-size: 10
+results-file-path: "/content/visual_migration_collections_rows_%d-%d.csv"
 national-archives-url: "http://webarchive.nationalarchives.gov.uk/20170726163612/"

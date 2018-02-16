@@ -9,6 +9,7 @@ import (
 	"flag"
 	"github.com/ONSdigital/dp-visual-ons-migration/migration"
 	"github.com/ONSdigital/dp-visual-ons-migration/executor"
+	"fmt"
 )
 
 func main() {
@@ -17,6 +18,7 @@ func main() {
 
 	cfgFile := flag.String("cfg", "config.yml", "the config to use when running the migration")
 	startIndex := flag.Int("start", 0, "")
+	batchSize := flag.Int("batchSize", 1, "")
 	flag.Parse()
 
 	cfg, err := config.Load(*cfgFile)
@@ -32,13 +34,14 @@ func main() {
 		exit(err)
 	}
 
-	e, err := executor.New(plan, *startIndex, cfg.ResultsFilePath)
+	outputFile := fmt.Sprintf(cfg.ResultsFilePath, *startIndex + 2, *batchSize + 1)
+	e, err := executor.New(plan, *startIndex, outputFile)
 	if err != nil {
 		exit(err)
 	}
 	defer e.Close()
 
-	e.Migrate(*startIndex, cfg.BatchSize)
+	e.Migrate(*startIndex, *batchSize)
 }
 
 func exit(err error) {

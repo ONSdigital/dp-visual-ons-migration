@@ -68,7 +68,8 @@ func CreateCollection(name string) (*Collection, error) {
 	collectionRootDir := fmt.Sprintf("%s/%s", CollectionsRoot, name)
 
 	if _, err := os.Stat(collectionRootDir); err == nil {
-		return nil, migration.Error{Message: "collection for this visual migration already exists", Params: log.Data{"path": collectionRootDir}, OriginalErr: nil}
+		msg := fmt.Sprintf("the collection %s already exist, skipping migration", name)
+		return nil, migration.Error{Message: msg, Params: log.Data{"path": collectionRootDir}, OriginalErr: nil}
 	}
 
 	metadata := &CollectionMetadata{
