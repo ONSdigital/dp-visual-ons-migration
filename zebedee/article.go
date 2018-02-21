@@ -82,7 +82,7 @@ type Article struct {
 	URI                       string             `json:"uri"`
 	Description               Description        `json:"description"`
 	Topics                    []interface{}      `json:"topics"`
-	ImageURI                  string             `json:"imageURI"`
+	ImageURI                  string             `json:"imageUri"`
 }
 
 type MarkdownSection struct {
