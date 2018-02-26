@@ -34,7 +34,7 @@ func main() {
 		exit(err)
 	}
 
-	outputFile := fmt.Sprintf(cfg.ResultsFilePath, *startIndex + 2, *batchSize + 1)
+	outputFile := fmt.Sprintf(cfg.ResultsFilePath, *startIndex + 2, *startIndex + *batchSize + 1)
 	e, err := executor.New(plan, *startIndex, outputFile)
 	if err != nil {
 		exit(err)

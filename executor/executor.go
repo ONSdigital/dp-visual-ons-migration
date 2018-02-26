@@ -105,7 +105,7 @@ func (e *Executor) Migrate(start int, batchSize int) {
 			continue
 		}
 
-		if uri := e.plan.VisualExport.GetThumbnailURL(a.ImageURI); uri != nil {
+/*		if uri := e.plan.VisualExport.GetThumbnailURL(a.ImageURI); uri != nil {
 			e.plan.GetMigratedURL(uri.String())
 			imgURI, err := e.plan.GetMigratedURL(uri.String())
 			if err != nil {
@@ -113,7 +113,7 @@ func (e *Executor) Migrate(start int, batchSize int) {
 				continue
 			}
 			a.ImageURI = imgURI
-		}
+		}*/
 
 		if err := col.AddArticle(a, article); err != nil {
 			e.logMigrationOutcome(err, article.VisualURL, a.URI, collectionName)

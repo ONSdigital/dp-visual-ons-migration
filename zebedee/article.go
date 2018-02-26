@@ -35,8 +35,8 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 
 	links := make([]*RelatedLink, 0)
 
-	var thumbnailID string
-	links, thumbnailID = ParseMetadata(visualItem)
+	//var thumbnailID string
+	links, _ = ParseMetadata(visualItem)
 	sort.Slice(links, func(i, j int) bool {
 		return links[i].ID < links[j].ID
 	})
@@ -59,7 +59,7 @@ func CreateArticle(details *migration.Article, visualItem *gofeed.Item) *Article
 		URI:                       details.TaxonomyURI,
 		Type:                      pageType,
 		Topics:                    []interface{}{},
-		ImageURI:                  thumbnailID,
+		ImageURI:                  "",
 	}
 }
 
