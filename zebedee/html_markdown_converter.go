@@ -51,15 +51,24 @@ htmlTokenizer:
 				markdownBody += fmt.Sprintf("[link-%d]", linkIndex)
 
 			} else if t.Data == "img" {
-				markdownBody += fmt.Sprintf(imageFormat, getAttr(t, "src"))
+				imgSrc, err := plan.GetMigratedURL(getAttr(t, "src"))
+				if err != nil {
+					return "", err
+				}
+
+				markdownBody += fmt.Sprintf(imageFormat, imgSrc)
 			} else if applyPlaceholder, ok := openPlaceholders[t.Data]; ok {
 				markdownBody = applyPlaceholder(markdownBody)
 			}
 		case tt == html.SelfClosingTagToken:
 			t := z.Token()
 			if t.Data == "img" {
+				imgSrc, err := plan.GetMigratedURL(getAttr(t, "src"))
+				if err != nil {
+					return "", err
+				}
 
-				imgVal := fmt.Sprintf(imageFormat, getAttr(t, "src"))
+				imgVal := fmt.Sprintf(imageFormat, imgSrc)
 				markdownBody = appendToBody(links, markdownBody, imgVal)
 			}
 		case tt == html.EndTagToken:

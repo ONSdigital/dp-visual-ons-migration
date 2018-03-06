@@ -7,7 +7,7 @@ const (
 	iFrameOpenRXPtn         = "\\[iframe url[ ]*=[ ]*"
 	iFrameCloseTag          = "]"
 	onsVisualOpenTag        = "<ons-interactive url="
-	onsVisualCloseTag       = " full-width=\"true\"/>"
+	onsVisualCloseTag       = " full-width=\"false\"/>"
 	footnotesRXPtn          = "\\[footnote\\].+?\\[\\/footnote\\]$*"
 	footnotesOpenTag        = "[footnote]"
 	footnotesCloseTag       = "[/footnote]"
