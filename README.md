@@ -5,11 +5,11 @@ Script for migration ONS Visual content to ONS website
 ## Running on an environment
 ssh into prod box and check if the container `visual-migration` already exists: `docker ps -a`
 
-If it doesn't then create one:
+If it doesn't then create one (replace the content path as necessary):
 
 ```bash
 docker run -i -t --name visual-migration \
-   -v /var/florence/zebedee/:/content \
+   -v /_CONTENT_DIR_ON_BOX_/:/content \
    golang /bin/bash
 ```
 
