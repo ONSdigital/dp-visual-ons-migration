@@ -45,5 +45,5 @@ This will create a results file in the `/content` of the prod box `visual_migrat
 ## SCP the file from the prod box
 
 ```bash
-scp -F ssh.cfg 10.30.16.14:/PATH_TO_FILE/visual_migration_collections_rows_51-100.csv .
+scp -F ssh.cfg _IP_ADDRESS_OF_BOX:/PATH_TO_FILE/visual_migration_collections_rows_51-100.csv .
 ```
